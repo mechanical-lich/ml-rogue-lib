@@ -4,92 +4,67 @@ title: rlai
 nav_order: 5
 ---
 
-# AI Helpers
+# AI Navigation Helpers
 
 `github.com/mechanical-lich/mg-rogue-lib/pkg/rlai`
 
-Stateless helper functions for entity movement, facing, interaction, and death detection. These are the low-level primitives that `AISystem` and game-specific player-input handlers call directly.
+Higher-level AI navigation utilities: target tracking, range checks, and path-following. These are the primitives used by `AISystem` for hostile pursuit and can be called from custom AI behaviours.
+
+For low-level entity manipulation (moving, facing, eating, death detection) see [`rlentity`](rlentity.html).
 
 ## Functions
 
-### HandleDeath
+### TrackTarget
 
 ```go
-func HandleDeath(entity *ecs.Entity) bool
+func TrackTarget(x, y, z, x2, y2, z2 int) (int, int, int)
 ```
 
-Checks whether the entity's `HealthComponent.Health` has dropped to zero or below. If so, adds a `DeadComponent` and returns `true`. Does nothing and returns `false` if the entity has no `HealthComponent`.
-
-Call this at the start of an entity's update to bail out early if it just died.
+Returns the unit delta `(dx, dy, dz)` needed to step from `(x,y,z)` toward `(x2,y2,z2)`. Each component is −1, 0, or 1. Useful as a simple direct-movement fallback when pathfinding is not available.
 
 ---
 
-### Move
+### WithinRange
 
 ```go
-func Move(entity *ecs.Entity, level rlworld.LevelInterface, deltaX, deltaY, deltaZ int) bool
+func WithinRange(x, y, z, x2, y2, z2, rangeX, rangeY, rangeZ int) bool
 ```
 
-Attempts to move the entity by `(deltaX, deltaY, deltaZ)`. Returns `true` if a solid entity was blocking the destination.
-
-**Movement rules:**
-
-- If a `SolidComponent` entity is at the destination, movement is blocked — unless the blocker is a `DoorComponent` that the entity is allowed to pass through (checked via `CanPassThroughDoor`).
-- If the destination tile is `IsAir`, the entity instead drops to the solid tile directly below (simulates gravity).
-- Water tiles block movement entirely.
-- Solid tiles block movement entirely.
+Returns `true` if `(x,y,z)` is within the given per-axis range of `(x2,y2,z2)`. Equivalent to a 3D axis-aligned bounding box check.
 
 ---
 
-### Face
+### WithinRangeCardinal
 
 ```go
-func Face(entity *ecs.Entity, deltaX, deltaY int)
+func WithinRangeCardinal(x, y, x2, y2, rangeX, rangeY int) bool
 ```
 
-Updates the entity's `DirectionComponent` based on a movement delta. Direction mapping:
-
-| `deltaX` / `deltaY` | Direction |
-|---------------------|-----------|
-| `deltaX > 0` | 0 (right) |
-| `deltaY > 0` | 1 (down) |
-| `deltaY < 0` | 2 (up) |
-| `deltaX < 0` | 3 (left) |
-
-Does nothing if the entity lacks a `DirectionComponent`.
+Returns `true` if `(x,y)` is reachable from `(x2,y2)` along a pure cardinal line (no diagonals). Either the X coordinates must match and Y must be within `rangeY`, or the Y coordinates must match and X must be within `rangeX`.
 
 ---
 
-### Eat
+### MoveTowardsTarget
 
 ```go
-func Eat(entity, foodEntity *ecs.Entity) bool
+func MoveTowardsTarget(
+    level rlworld.LevelInterface,
+    entity *ecs.Entity,
+    targetX, targetY, targetZ int,
+    getPath func(level rlworld.LevelInterface, from, to rlworld.TileInterface, reuse []path.Pather) []path.Pather,
+) bool
 ```
 
-Consumes one unit of food from `foodEntity` by decrementing `FoodComponent.Amount`. Returns `true` on success, `false` if `foodEntity` has no `FoodComponent` or if `entity == foodEntity`.
+Moves the entity one step along a cached A* path toward `(targetX, targetY, targetZ)`. Returns `true` if a step was taken.
 
----
+Requires the entity to have both `PositionComponent` and `AIMemoryComponent`. The path is cached in `AIMemoryComponent.CurrentSteps` and is recomputed when the target changes or the path is exhausted.
 
-### Swap
+**Behaviour:**
 
-```go
-func Swap(level rlworld.LevelInterface, entity, entityHit *ecs.Entity)
-```
-
-Exchanges the grid positions of two entities. Calls `level.PlaceEntity` for both. Does nothing if they are the same entity.
-
----
-
-### CanPassThroughDoor
-
-```go
-func CanPassThroughDoor(entity *ecs.Entity, door *rlcomponents.DoorComponent) bool
-```
-
-Returns `true` if the entity is allowed to move through the given door. An entity may pass if:
-
-- The door is not locked, **or**
-- The door's `OwnedBy` faction matches the entity's `DescriptionComponent.Faction`.
+1. Compares the stored target against `(targetX, targetY, targetZ)`. Recomputes the path via `getPath` when they differ or fewer than 2 steps remain.
+2. Walks forward along the cached path, skipping steps the entity has already reached.
+3. If the next step is solid or blocked by a solid entity, clears the cached path and returns `false`.
+4. Otherwise calls `rlentity.HandleMovement` to move and face the entity.
 
 ---
 
@@ -98,29 +73,26 @@ Returns `true` if the entity is allowed to move through the given door. An entit
 ```go
 import (
     "github.com/mechanical-lich/mg-rogue-lib/pkg/rlai"
+    "github.com/mechanical-lich/mg-rogue-lib/pkg/rlentity"
+    "github.com/mechanical-lich/mlge/path"
     "github.com/mechanical-lich/mlge/utility"
 )
 
-// Simple wander step (same logic as WanderAI inside AISystem).
-func wanderStep(entity *ecs.Entity, level rlworld.LevelInterface) {
-    dx := utility.GetRandom(-1, 2)
-    dy := 0
-    if dx == 0 {
-        dy = utility.GetRandom(-1, 2)
+// Hostile entity pursues the player using A* each turn.
+func pursuePlayer(level rlworld.LevelInterface, self, player *ecs.Entity, astar *path.AStar) {
+    pc := player.GetComponent(rlcomponents.Position).(*rlcomponents.PositionComponent)
+    moved := rlai.MoveTowardsTarget(level, self, pc.GetX(), pc.GetY(), pc.GetZ(),
+        func(lvl rlworld.LevelInterface, from, to rlworld.TileInterface, reuse []path.Pather) []path.Pather {
+            result, _, _ := astar.Path(from, to)
+            return result
+        },
+    )
+    if !moved {
+        // Fallback: direct step.
+        selfPC := self.GetComponent(rlcomponents.Position).(*rlcomponents.PositionComponent)
+        dx, dy, dz := rlai.TrackTarget(selfPC.GetX(), selfPC.GetY(), selfPC.GetZ(),
+            pc.GetX(), pc.GetY(), pc.GetZ())
+        rlentity.HandleMovement(level, self, dx, dy, dz)
     }
-    rlai.Move(entity, level, dx, dy, 0)
-    rlai.Face(entity, dx, dy)
-}
-
-// Player movement handler.
-func movePlayer(player *ecs.Entity, level rlworld.LevelInterface, dx, dy int) {
-    if rlai.HandleDeath(player) {
-        return
-    }
-    hitSolid := rlai.Move(player, level, dx, dy, 0)
-    if hitSolid {
-        // bump-attack logic, open door prompt, etc.
-    }
-    rlai.Face(player, dx, dy)
 }
 ```

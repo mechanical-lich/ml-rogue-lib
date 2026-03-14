@@ -4,6 +4,7 @@ import (
 	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlai"
 	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlcombat"
 	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlcomponents"
+	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlentity"
 	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlworld"
 	"github.com/mechanical-lich/mlge/ecs"
 	"github.com/mechanical-lich/mlge/path"
@@ -67,7 +68,7 @@ func (s *AISystem) UpdateEntity(levelInterface interface{}, entity *ecs.Entity) 
 
 	pc := entity.GetComponent(rlcomponents.Position).(*rlcomponents.PositionComponent)
 
-	if rlai.HandleDeath(entity) {
+	if rlentity.HandleDeath(entity) {
 		return nil
 	}
 
@@ -78,8 +79,8 @@ func (s *AISystem) UpdateEntity(levelInterface interface{}, entity *ecs.Entity) 
 		if dx == 0 {
 			dy = utility.GetRandom(-1, 2)
 		}
-		rlai.Move(entity, level, dx, dy, 0)
-		rlai.Face(entity, dx, dy)
+		rlentity.Move(entity, level, dx, dy, 0)
+		rlentity.Face(entity, dx, dy)
 		if s.OnWander != nil {
 			s.OnWander(entity)
 		}
@@ -158,7 +159,7 @@ func (s *AISystem) UpdateEntity(levelInterface interface{}, entity *ecs.Entity) 
 		for _, e := range s.entitiesHitBuf {
 			if e != entity && e.HasComponent(rlcomponents.Health) {
 				rlcombat.Hit(level, entity, e, true)
-				rlai.Eat(entity, e)
+				rlentity.Eat(entity, e)
 				if s.OnHostileAttack != nil {
 					s.OnHostileAttack(level, entity, e)
 				}
@@ -166,9 +167,9 @@ func (s *AISystem) UpdateEntity(levelInterface interface{}, entity *ecs.Entity) 
 			}
 		}
 		if !hit {
-			rlai.Move(entity, level, dx, dy, 0)
+			rlentity.Move(entity, level, dx, dy, 0)
 		}
-		rlai.Face(entity, dx, dy)
+		rlentity.Face(entity, dx, dy)
 	}
 
 	// ── Defensive AI ──────────────────────────────────────────────────────────
@@ -193,7 +194,7 @@ func (s *AISystem) UpdateEntity(levelInterface interface{}, entity *ecs.Entity) 
 			} else if pc.GetY() > aic.AttackerY {
 				dy = -1
 			}
-			rlai.Face(entity, dx, dy)
+			rlentity.Face(entity, dx, dy)
 		}
 	}
 
