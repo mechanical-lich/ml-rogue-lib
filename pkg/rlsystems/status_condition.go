@@ -1,0 +1,92 @@
+package rlsystems
+
+import (
+	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlcomponents"
+	"github.com/mechanical-lich/mlge/ecs"
+)
+
+// statusEntry pairs a decaying component type with its per-turn effect name.
+type statusEntry struct {
+	componentType ecs.ComponentType
+	effectName    string
+}
+
+// StatusConditionSystem ticks decaying status effects (Poisoned, Burning, Alerted)
+// and applies their per-turn damage. It also handles Regeneration and LightSensitive.
+//
+// Extension hooks:
+//   - ExtraStatuses: additional DecayingComponent types to tick alongside built-ins.
+//     Map key is the effect name passed to OnStatusEffect.
+//   - OnStatusEffect: called each turn for every active status effect on an entity.
+//     Use this to apply custom damage, spawn FX entities, play sounds, etc.
+//     The built-in effects (Poisoned: -1 HP, Burning: -2 HP) run before this hook.
+type StatusConditionSystem struct {
+	// ExtraStatuses lets games register additional decaying component types.
+	// Key = effect name, Value = component type.
+	ExtraStatuses map[string]ecs.ComponentType
+
+	// OnStatusEffect is called for each active status each turn.
+	// effectName is one of "Poisoned", "Burning", "Alerted", or a key from ExtraStatuses.
+	OnStatusEffect func(entity *ecs.Entity, effectName string)
+}
+
+var statusConditionRequires = []ecs.ComponentType{
+	rlcomponents.Position,
+	rlcomponents.MyTurn,
+}
+
+func (s *StatusConditionSystem) Requires() []ecs.ComponentType {
+	return statusConditionRequires
+}
+
+func (s *StatusConditionSystem) UpdateSystem(data interface{}) error {
+	return nil
+}
+
+func (s *StatusConditionSystem) UpdateEntity(levelInterface interface{}, entity *ecs.Entity) error {
+	statuses := []statusEntry{
+		{rlcomponents.Poisoned, "Poisoned"},
+		{rlcomponents.Alerted, "Alerted"},
+		{rlcomponents.Burning, "Burning"},
+	}
+	for name, ct := range s.ExtraStatuses {
+		statuses = append(statuses, statusEntry{ct, name})
+	}
+
+	for _, se := range statuses {
+		if !entity.HasComponent(se.componentType) {
+			continue
+		}
+		dc := entity.GetComponent(se.componentType).(rlcomponents.DecayingComponent)
+		if dc.Decay() {
+			entity.RemoveComponent(se.componentType)
+		}
+
+		// Built-in damage effects.
+		if entity.HasComponent(rlcomponents.Health) {
+			hc := entity.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
+			switch se.effectName {
+			case "Poisoned":
+				hc.Health -= 1
+			case "Burning":
+				hc.Health -= 2
+			}
+		}
+
+		if s.OnStatusEffect != nil {
+			s.OnStatusEffect(entity, se.effectName)
+		}
+	}
+
+	// Regeneration.
+	if entity.HasComponent(rlcomponents.Regeneration) && entity.HasComponent(rlcomponents.Health) {
+		rc := entity.GetComponent(rlcomponents.Regeneration).(*rlcomponents.RegenerationComponent)
+		hc := entity.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
+		hc.Health += rc.Amount
+		if hc.Health > hc.MaxHealth {
+			hc.Health = hc.MaxHealth
+		}
+	}
+
+	return nil
+}
