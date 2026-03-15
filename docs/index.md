@@ -4,13 +4,13 @@ title: Home
 nav_order: 1
 ---
 
-# MG Rogue Lib
+# ML Rogue Lib
 
 Reusable roguelike and tile-based game packages built on top of [MLGE](https://mechanical-lich.github.io/mlge).
 
 ## Overview
 
-MG Rogue Lib is a Go library providing the building blocks for roguelike and tile-based games. It supplies ready-made ECS components, AI behaviors, a turn-based combat system, procedural generation helpers, and game systems — all designed to plug into any project that uses [MLGE's](https://mechanical-lich.github.io/mlge) ECS and world interfaces.
+ML Rogue Lib is a Go library providing the building blocks for roguelike and tile-based games. It supplies ready-made ECS components, AI behaviors, a turn-based combat system, procedural generation helpers, and game systems — all designed to plug into any project that uses [MLGE's](https://mechanical-lich.github.io/mlge) ECS and world interfaces.
 
 Rather than prescribing a specific game loop, the library is intentionally open: systems expose extension hooks so each game can supply its own sounds, effects, UI feedback, and win conditions without forking library code.
 
@@ -48,7 +48,7 @@ go get github.com/mechanical-lich/ml-rogue-lib
 
 ## Dependencies
 
-MG Rogue Lib depends on [MLGE](https://mechanical-lich.github.io/mlge) for the ECS foundation (`ecs.Entity`, `ecs.Component`), pathfinding (`path.Pather`), dice rolling, and message posting. It also uses `go-perlin` for procedural terrain generation.
+ML Rogue Lib depends on [MLGE](https://mechanical-lich.github.io/mlge) for the ECS foundation (`ecs.Entity`, `ecs.Component`), pathfinding (`path.Pather`), dice rolling, and message posting. It also uses `go-perlin` for procedural terrain generation.
 
 ## License
 

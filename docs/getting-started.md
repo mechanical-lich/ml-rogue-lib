@@ -6,7 +6,7 @@ nav_order: 2
 
 # Getting Started
 
-This guide covers installation and a minimal integration example using MG Rogue Lib.
+This guide covers installation and a minimal integration example using ML Rogue Lib.
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ go get github.com/mechanical-lich/ml-rogue-lib
 
 ## Core Concepts
 
-MG Rogue Lib is built around MLGE's ECS. Every game object is an `*ecs.Entity` carrying a set of `rlcomponents` structs. Systems iterate entities each frame and act on whichever components they require.
+ML Rogue Lib is built around MLGE's ECS. Every game object is an `*ecs.Entity` carrying a set of `rlcomponents` structs. Systems iterate entities each frame and act on whichever components they require.
 
 The library does **not** own your game loop or your concrete level type. Instead it defines two interfaces — `rlworld.LevelInterface` and `rlworld.TileInterface` — that your level implementation must satisfy. All systems and helpers accept these interfaces, keeping the library decoupled from any specific game.
 
