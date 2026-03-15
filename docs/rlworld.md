@@ -119,6 +119,7 @@ type TileDefinition struct {
     Air        bool          `json:"air"`
     StairsUp   bool          `json:"stairsUp"`
     StairsDown bool          `json:"stairsDown"`
+    AutoTile   int           `json:"autoTile"`
     Variants   []TileVariant `json:"variants"`
 }
 
@@ -129,12 +130,21 @@ type TileVariant struct {
 }
 ```
 
-Games that need additional fields (e.g. `Wall`, `NoBudding`) can embed `TileDefinition` in their own struct:
+#### AutoTile Modes
+
+The `AutoTile` field controls how `Level.ResolveVariant` selects the visual variant for a tile:
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `AutoTileNone` | `0` | Default. Uses `tile.Variant` as a direct index into `Variants` |
+| `AutoTileWall` | `1` | 2-variant wall. If the bottom neighbor is the same tile type, uses `Variants[0]` (top/connected); otherwise `Variants[1]` (edge/sides) |
+| `AutoTileBitmask` | `2` | 4-bit cardinal bitmask. Computes an index from top (bit 0), bottom (bit 1), left (bit 2), right (bit 3) neighbor matching → up to 16 variants |
+
+Games that need additional fields can embed `TileDefinition` in their own struct:
 
 ```go
 type GameTileDefinition struct {
     rlworld.TileDefinition
-    Wall      bool `json:"wall"`
     NoBudding bool `json:"no_budding"`
 }
 ```
@@ -234,6 +244,7 @@ level := rlworld.NewLevel(width, height, depth)
 | `InitTiles` | `()` | Reinitializes all tiles to air (parallel) |
 | `GetTilePtr` | `(x, y, z int) *Tile` | Returns a direct `*Tile` pointer (nil if out of bounds) — use this when you need the concrete type |
 | `GetTilePtrIndex` | `(idx int) *Tile` | Returns a direct `*Tile` pointer by flat index |
+| `ResolveVariant` | `(t *Tile) TileVariant` | Returns the correct `TileVariant` for the tile based on its `AutoTile` mode and neighbors |
 
 #### Embedding the Base Level
 

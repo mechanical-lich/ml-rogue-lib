@@ -12,6 +12,13 @@ type TileVariant struct {
 	SpriteY int `json:"spriteY"`
 }
 
+// AutoTile modes control how ResolveVariant selects the visual variant for a tile.
+const (
+	AutoTileNone    = 0 // Use tile.Variant as-is (default)
+	AutoTileWall    = 1 // 2-variant: connected bottom → Variants[0], edge → Variants[1]
+	AutoTileBitmask = 2 // 4-bit cardinal bitmask (top|bottom|left|right) → 16 variants
+)
+
 // TileDefinition describes one category of tile (e.g. "grass", "stone_wall").
 // Games can embed this struct to add domain-specific fields.
 type TileDefinition struct {
@@ -22,6 +29,7 @@ type TileDefinition struct {
 	Air        bool          `json:"air"`
 	StairsUp   bool          `json:"stairsUp"`
 	StairsDown bool          `json:"stairsDown"`
+	AutoTile   int           `json:"autoTile"`
 	Variants   []TileVariant `json:"variants"`
 }
 

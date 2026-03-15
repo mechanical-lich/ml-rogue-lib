@@ -46,7 +46,7 @@ var _ LevelInterface = (*Level)(nil)
 func NewLevel(width, height, depth int) *Level {
 	level := &Level{
 		Width: width, Height: height, Depth: depth,
-		Hour:           10,
+		Hour:      10,
 		Data:      make([]Tile, width*height*depth),
 		entityPos: make(map[int][]*ecs.Entity, 2048),
 	}
@@ -119,6 +119,50 @@ func (level *Level) AreNeighborsTheSame(t *Tile) (top, bottom, left, right bool)
 		bottom = true
 	}
 	return
+}
+
+// ResolveVariant returns the correct TileVariant for the given tile based on
+// its TileDefinition's AutoTile mode and its neighbors.
+func (level *Level) ResolveVariant(t *Tile) TileVariant {
+	def := TileDefinitions[t.Type]
+
+	switch def.AutoTile {
+	case AutoTileWall:
+		// 2-variant wall: bottom neighbor connected → Variants[0], else Variants[1]
+		_, bottom, _, _ := level.AreNeighborsTheSame(t)
+		if bottom {
+			return def.Variants[0]
+		}
+		return def.Variants[1]
+
+	case AutoTileBitmask:
+		// 4-bit cardinal bitmask: top=1, bottom=2, left=4, right=8 → 16 variants
+		top, bottom, left, right := level.AreNeighborsTheSame(t)
+		idx := 0
+		if top {
+			idx |= 1
+		}
+		if bottom {
+			idx |= 2
+		}
+		if left {
+			idx |= 4
+		}
+		if right {
+			idx |= 8
+		}
+		if idx < len(def.Variants) {
+			return def.Variants[idx]
+		}
+		return def.Variants[0]
+
+	default:
+		// AutoTileNone: use tile.Variant directly
+		if t.Variant >= 0 && t.Variant < len(def.Variants) {
+			return def.Variants[t.Variant]
+		}
+		return def.Variants[0]
+	}
 }
 
 // ─── Index math ──────────────────────────────────────────────────────
