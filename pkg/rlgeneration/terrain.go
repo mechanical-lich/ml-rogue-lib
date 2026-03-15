@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/aquilax/go-perlin"
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlworld"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlworld"
 )
 
 const (

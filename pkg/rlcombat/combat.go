@@ -5,8 +5,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlcomponents"
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlworld"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlcomponents"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlworld"
 	"github.com/mechanical-lich/mlge/dice"
 	"github.com/mechanical-lich/mlge/ecs"
 	"github.com/mechanical-lich/mlge/message"

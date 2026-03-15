@@ -6,7 +6,7 @@ nav_order: 5
 
 # AI Navigation Helpers
 
-`github.com/mechanical-lich/mg-rogue-lib/pkg/rlai`
+`github.com/mechanical-lich/ml-rogue-lib/pkg/rlai`
 
 Higher-level AI navigation utilities: target tracking, range checks, and path-following. These are the primitives used by `AISystem` for hostile pursuit and can be called from custom AI behaviours.
 
@@ -72,8 +72,8 @@ Requires the entity to have both `PositionComponent` and `AIMemoryComponent`. Th
 
 ```go
 import (
-    "github.com/mechanical-lich/mg-rogue-lib/pkg/rlai"
-    "github.com/mechanical-lich/mg-rogue-lib/pkg/rlentity"
+    "github.com/mechanical-lich/ml-rogue-lib/pkg/rlai"
+    "github.com/mechanical-lich/ml-rogue-lib/pkg/rlentity"
     "github.com/mechanical-lich/mlge/path"
     "github.com/mechanical-lich/mlge/utility"
 )

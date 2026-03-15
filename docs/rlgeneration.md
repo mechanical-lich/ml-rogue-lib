@@ -6,7 +6,7 @@ nav_order: 8
 
 # Level Generation
 
-`github.com/mechanical-lich/mg-rogue-lib/pkg/rlgeneration`
+`github.com/mechanical-lich/ml-rogue-lib/pkg/rlgeneration`
 
 Procedural generation functions for tile-based levels. Includes primitive shape carvers, random-walk entity and tile clusters, bud-based room growth, recursive subdivision, and Perlin noise terrain generators.
 

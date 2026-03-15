@@ -1,11 +1,11 @@
 package rlsystems
 
 import (
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlai"
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlcombat"
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlcomponents"
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlentity"
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlworld"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlai"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlcombat"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlcomponents"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlentity"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlworld"
 	"github.com/mechanical-lich/mlge/ecs"
 	"github.com/mechanical-lich/mlge/path"
 	"github.com/mechanical-lich/mlge/utility"

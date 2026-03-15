@@ -43,7 +43,7 @@ Rather than prescribing a specific game loop, the library is intentionally open:
 ## Installation
 
 ```bash
-go get github.com/mechanical-lich/mg-rogue-lib
+go get github.com/mechanical-lich/ml-rogue-lib
 ```
 
 ## Dependencies
@@ -52,4 +52,4 @@ MG Rogue Lib depends on [MLGE](https://mechanical-lich.github.io/mlge) for the E
 
 ## License
 
-See [LICENSE](https://github.com/mechanical-lich/mg-rogue-lib/blob/main/LICENSE) for details.
+See [LICENSE](https://github.com/mechanical-lich/ml-rogue-lib/blob/main/LICENSE) for details.

@@ -6,7 +6,7 @@ nav_order: 7
 
 # Entity Helpers
 
-`github.com/mechanical-lich/mg-rogue-lib/pkg/rlentity`
+`github.com/mechanical-lich/ml-rogue-lib/pkg/rlentity`
 
 Stateless helper functions for common entity manipulations: movement, facing, interaction, and death detection. These are the low-level primitives used by `AISystem`, `rlai`, and game-specific input handlers.
 
@@ -114,7 +114,7 @@ Returns the entity's `DescriptionComponent.Name`, or `"Unknown"` if the componen
 
 ```go
 import (
-    "github.com/mechanical-lich/mg-rogue-lib/pkg/rlentity"
+    "github.com/mechanical-lich/ml-rogue-lib/pkg/rlentity"
     "github.com/mechanical-lich/mlge/utility"
 )
 

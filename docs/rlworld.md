@@ -6,7 +6,7 @@ nav_order: 4
 
 # World Interfaces
 
-`github.com/mechanical-lich/mg-rogue-lib/pkg/rlworld`
+`github.com/mechanical-lich/ml-rogue-lib/pkg/rlworld`
 
 Two interfaces that decouple all library code from any concrete level or tile implementation. Implement these on your game's own types to make them compatible with every system and helper in this library.
 

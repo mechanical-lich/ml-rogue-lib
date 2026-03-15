@@ -6,7 +6,7 @@ nav_order: 9
 
 # Systems
 
-`github.com/mechanical-lich/mg-rogue-lib/pkg/rlsystems`
+`github.com/mechanical-lich/ml-rogue-lib/pkg/rlsystems`
 
 Turn-based ECS systems. Each system implements MLGE's `ecs.SystemInterface` (except `CleanUpSystem`, which has its own `Update` method) and is registered with a `ecs.SystemManager` or called directly each frame.
 

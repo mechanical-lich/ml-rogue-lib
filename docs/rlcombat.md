@@ -6,7 +6,7 @@ nav_order: 6
 
 # Combat
 
-`github.com/mechanical-lich/mg-rogue-lib/pkg/rlcombat`
+`github.com/mechanical-lich/ml-rogue-lib/pkg/rlcombat`
 
 A D&D-style melee combat pipeline covering to-hit rolls, damage calculation, resistances, weaknesses, and status effect transfer. All functions are stateless — wire them into your game systems or player action handlers.
 
@@ -143,7 +143,7 @@ Resistances and weaknesses are stored as `[]string` on `StatsComponent`. Equippe
 ## Usage Example
 
 ```go
-import "github.com/mechanical-lich/mg-rogue-lib/pkg/rlcombat"
+import "github.com/mechanical-lich/ml-rogue-lib/pkg/rlcombat"
 
 // Player bumps into an enemy entity.
 func onPlayerBump(level rlworld.LevelInterface, player, target *ecs.Entity) {

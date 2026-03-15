@@ -16,7 +16,7 @@ This guide covers installation and a minimal integration example using MG Rogue 
 ## Installation
 
 ```bash
-go get github.com/mechanical-lich/mg-rogue-lib
+go get github.com/mechanical-lich/ml-rogue-lib
 ```
 
 ## Core Concepts
@@ -52,7 +52,7 @@ func (l *MyLevel) GetHeight() int { return 64 }
 ```go
 import (
     "github.com/mechanical-lich/mlge/ecs"
-    "github.com/mechanical-lich/mg-rogue-lib/pkg/rlcomponents"
+    "github.com/mechanical-lich/ml-rogue-lib/pkg/rlcomponents"
 )
 
 func spawnPlayer(level *MyLevel, x, y int) *ecs.Entity {
@@ -75,7 +75,7 @@ func spawnPlayer(level *MyLevel, x, y int) *ecs.Entity {
 
 ```go
 import (
-    "github.com/mechanical-lich/mg-rogue-lib/pkg/rlsystems"
+    "github.com/mechanical-lich/ml-rogue-lib/pkg/rlsystems"
     "github.com/mechanical-lich/mlge/ecs"
 )
 

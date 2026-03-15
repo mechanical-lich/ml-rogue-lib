@@ -1,9 +1,9 @@
 package rlai
 
 import (
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlcomponents"
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlentity"
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlworld"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlcomponents"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlentity"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlworld"
 	"github.com/mechanical-lich/mlge/ecs"
 	"github.com/mechanical-lich/mlge/path"
 )

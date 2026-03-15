@@ -1,4 +1,4 @@
-module github.com/mechanical-lich/mg-rogue-lib
+module github.com/mechanical-lich/ml-rogue-lib
 
 go 1.25.0
 

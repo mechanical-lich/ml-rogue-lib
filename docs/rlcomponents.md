@@ -6,7 +6,7 @@ nav_order: 3
 
 # Components
 
-`github.com/mechanical-lich/mg-rogue-lib/pkg/rlcomponents`
+`github.com/mechanical-lich/ml-rogue-lib/pkg/rlcomponents`
 
 All ECS component types used by MG Rogue Lib systems. Add these to `*ecs.Entity` instances to opt them into the relevant behaviors.
 

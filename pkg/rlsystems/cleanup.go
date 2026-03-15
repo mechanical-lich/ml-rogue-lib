@@ -1,8 +1,8 @@
 package rlsystems
 
 import (
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlcomponents"
-	"github.com/mechanical-lich/mg-rogue-lib/pkg/rlworld"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlcomponents"
+	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlworld"
 	"github.com/mechanical-lich/mlge/ecs"
 )
 
