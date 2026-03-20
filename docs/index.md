@@ -42,6 +42,9 @@ Rather than prescribing a specific game loop, the library is intentionally open:
 | [`rlentity`](rlentity.html) | Stateless entity helpers (move, face, eat, swap, death detection) |
 | [`rlgeneration`](rlgeneration.html) | Procedural level and terrain generation |
 | [`rlsystems`](rlsystems.html) | Turn-based ECS systems (AI, Initiative, StatusCondition, Door, Cleanup) |
+| [`rlasciiclient`](rlasciiclient.html) | Ebiten ASCII client: decodes server snapshots into an entity store and renders a tile-grid viewport |
+| [`rltermclient`](rltermclient.html) | Terminal ASCII client (tcell): renders the same snapshots in a headless terminal with GUI overlay support |
+| [`rltermgui`](rltermgui.html) | Lightweight terminal GUI layer (tcell): Views, Pane, GUI manager, and drawing helpers |
 
 ## Installation
 
