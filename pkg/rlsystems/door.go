@@ -37,6 +37,23 @@ func (s *DoorSystem) UpdateSystem(data interface{}) error {
 	return nil
 }
 
+// SyncDoorAppearance immediately updates the appearance sprite of a door entity
+// to match its current open/closed state. Call this whenever you change door.Open
+// outside of DoorSystem (e.g. in PlayerSystem.toggleDoor) to avoid a one-tick lag.
+func SyncDoorAppearance(entity *ecs.Entity, appearanceType ecs.ComponentType) {
+	if !entity.HasComponent(rlcomponents.Door) || !entity.HasComponent(appearanceType) {
+		return
+	}
+	door := entity.GetComponent(rlcomponents.Door).(*rlcomponents.DoorComponent)
+	if ac, ok := entity.GetComponent(appearanceType).(AppearanceUpdater); ok {
+		if door.Open {
+			ac.SetSprite(door.OpenedSpriteX, door.OpenedSpriteY)
+		} else {
+			ac.SetSprite(door.ClosedSpriteX, door.ClosedSpriteY)
+		}
+	}
+}
+
 func (s *DoorSystem) UpdateEntity(levelInterface interface{}, entity *ecs.Entity) error {
 	door := entity.GetComponent(rlcomponents.Door).(*rlcomponents.DoorComponent)
 
