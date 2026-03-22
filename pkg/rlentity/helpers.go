@@ -233,26 +233,27 @@ func FindByTag(level rlworld.LevelInterface, tag string) []*ecs.Entity {
 	return results
 }
 
-// CheckPassOver looks for entities at (x, y, z) that carry a PassOverDescription
-// and posts a random one as a located tagged message. Only the first matching
-// entity fires — call this after a successful Move to avoid message spam.
+// CheckPassOver is called after a successful Move. For each entity at (x, y, z)
+// other than the mover it:
+//   - fires InteractionComponent triggers (walk-over pressure plates, floor triggers, etc.)
+//   - posts a random PassOverDescription message (first match only)
 func CheckPassOver(mover *ecs.Entity, level rlworld.LevelInterface, x, y, z int) {
 	var buf []*ecs.Entity
 	level.GetEntitiesAt(x, y, z, &buf)
+	passOverPosted := false
 	for _, e := range buf {
 		if e == mover {
 			continue
 		}
-		if !e.HasComponent(rlcomponents.Description) {
-			continue
+		CheckInteraction(mover, e)
+		if !passOverPosted && e.HasComponent(rlcomponents.Description) {
+			dc := e.GetComponent(rlcomponents.Description).(*rlcomponents.DescriptionComponent)
+			if len(dc.PassOverDescription) > 0 {
+				msg := dc.PassOverDescription[rand.Intn(len(dc.PassOverDescription))]
+				message.PostLocatedTaggedMessage("passover", dc.Name, msg, x, y, z)
+				passOverPosted = true
+			}
 		}
-		dc := e.GetComponent(rlcomponents.Description).(*rlcomponents.DescriptionComponent)
-		if len(dc.PassOverDescription) == 0 {
-			continue
-		}
-		msg := dc.PassOverDescription[rand.Intn(len(dc.PassOverDescription))]
-		message.PostLocatedTaggedMessage("passover", dc.Name, msg, x, y, z)
-		return
 	}
 }
 
