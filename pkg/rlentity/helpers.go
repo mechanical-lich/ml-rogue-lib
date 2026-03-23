@@ -134,17 +134,27 @@ func Move(entity *ecs.Entity, level rlworld.LevelInterface, deltaX, deltaY, delt
 	startY := destY - h/2
 
 	// Check every footprint tile for entity blockers.
+	// Use GetSolidEntitiesAt so all solid entities at a tile are considered,
+	// not just the first one returned.
+	var solidBuf []*ecs.Entity
 	entityBlocked := false
-	for dx := 0; dx < w && !entityBlocked; dx++ {
-		for dy := 0; dy < h && !entityBlocked; dy++ {
-			blocker := level.GetSolidEntityAt(startX+dx, startY+dy, destZ)
-			if blocker != nil && blocker != entity {
-				entityBlocked = true
+outer:
+	for dx := 0; dx < w; dx++ {
+		for dy := 0; dy < h; dy++ {
+			solidBuf = solidBuf[:0]
+			level.GetSolidEntitiesAt(startX+dx, startY+dy, destZ, &solidBuf)
+			for _, blocker := range solidBuf {
+				if blocker == entity {
+					continue
+				}
+				passable := false
 				if blocker.HasComponent(rlcomponents.Door) {
 					door := blocker.GetComponent(rlcomponents.Door).(*rlcomponents.DoorComponent)
-					if CanPassThroughDoor(entity, door) {
-						entityBlocked = false
-					}
+					passable = CanPassThroughDoor(entity, door)
+				}
+				if !passable {
+					entityBlocked = true
+					break outer
 				}
 			}
 		}
@@ -192,12 +202,16 @@ func FootprintBlockers(entity *ecs.Entity, level rlworld.LevelInterface, destX, 
 	startY := destY - h/2
 	*buf = (*buf)[:0]
 	seen := map[*ecs.Entity]bool{}
+	var solidBuf []*ecs.Entity
 	for dx := 0; dx < w; dx++ {
 		for dy := 0; dy < h; dy++ {
-			blocker := level.GetSolidEntityAt(startX+dx, startY+dy, destZ)
-			if blocker != nil && blocker != entity && !seen[blocker] {
-				seen[blocker] = true
-				*buf = append(*buf, blocker)
+			solidBuf = solidBuf[:0]
+			level.GetSolidEntitiesAt(startX+dx, startY+dy, destZ, &solidBuf)
+			for _, blocker := range solidBuf {
+				if blocker != entity && !seen[blocker] {
+					seen[blocker] = true
+					*buf = append(*buf, blocker)
+				}
 			}
 		}
 	}

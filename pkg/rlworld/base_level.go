@@ -356,7 +356,16 @@ func (g *SizedGraph) PathCost(fromIdx, toIdx int) float64 {
 		to := &g.Level.Data[toIdx]
 		if !TileDefinitions[to.Type].Solid {
 			x, y, z := to.Coords()
-			if blocker := g.Level.GetSolidEntityAt(x, y, z); blocker == g.Entity {
+			var solidBuf []*ecs.Entity
+			g.Level.GetSolidEntitiesAt(x, y, z, &solidBuf)
+			onlySelf := len(solidBuf) > 0
+			for _, e := range solidBuf {
+				if e != g.Entity {
+					onlySelf = false
+					break
+				}
+			}
+			if onlySelf {
 				return 10
 			}
 		}
@@ -558,6 +567,18 @@ func (level *Level) GetSolidEntityAt(x, y, z int) *ecs.Entity {
 		}
 	}
 	return nil
+}
+
+// GetSolidEntitiesAt appends all solid entities at (x,y,z) to buf.
+func (level *Level) GetSolidEntitiesAt(x, y, z int, buf *[]*ecs.Entity) {
+	if level.InBounds(x, y, z) {
+		key := level.index(x, y, z)
+		for _, entity := range level.entityPos[key] {
+			if entity.HasComponent(rlcomponents.Solid) {
+				*buf = append(*buf, entity)
+			}
+		}
+	}
 }
 
 func (level *Level) GetEntitiesAround(x, y, z, width, height int, buffer *[]*ecs.Entity) {
