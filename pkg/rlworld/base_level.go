@@ -295,6 +295,79 @@ func (level *Level) PathEstimate(fromIdx, toIdx int) float64 {
 	return float64(dx*dx + dy*dy + dz*dz)
 }
 
+// SizedGraph wraps a Level to validate the full entity footprint at every
+// candidate position during A* pathfinding. Use this for entities with a
+// SizeComponent so the path only follows tiles where the whole footprint fits
+// without crossing solid tiles.
+//
+// Footprint centering: startX = cx - Width/2, startY = cy - Height/2
+// (integer division, matching entityFootprint in PlaceEntity/RemoveEntity).
+type SizedGraph struct {
+	Level  *Level
+	Width  int
+	Height int
+	Entity *ecs.Entity // the entity being pathfinded — excluded from blocker cost checks
+}
+
+// PathNeighborIDs includes a neighbor only when the entity's full footprint
+// centered on that neighbor tile is free of solid/out-of-bounds tiles.
+func (g *SizedGraph) PathNeighborIDs(tileIdx int, buf []int) []int {
+	t := &g.Level.Data[tileIdx]
+	x, y, z := t.Coords()
+	for i := range pathOffsets {
+		offset := &pathOffsets[i]
+		nx, ny, nz := x+offset[0], y+offset[1], z+offset[2]
+		n := g.Level.GetTilePtr(nx, ny, nz)
+		if n == nil {
+			continue
+		}
+		if offset[2] != 0 && !(TileDefinitions[n.Type].StairsUp || TileDefinitions[n.Type].StairsDown) {
+			continue
+		}
+		if !g.footprintClear(nx, ny, nz) {
+			continue
+		}
+		buf = append(buf, n.Idx)
+	}
+	return buf
+}
+
+func (g *SizedGraph) footprintClear(cx, cy, z int) bool {
+	startX := cx - g.Width/2
+	startY := cy - g.Height/2
+	for dx := 0; dx < g.Width; dx++ {
+		for dy := 0; dy < g.Height; dy++ {
+			tile := g.Level.GetTilePtr(startX+dx, startY+dy, z)
+			if tile == nil || TileDefinitions[tile.Type].Solid {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (g *SizedGraph) PathCost(fromIdx, toIdx int) float64 {
+	cost := g.Level.PathCost(fromIdx, toIdx)
+	// If the level's cost function penalised this tile due to a solid entity,
+	// check whether that entity is actually ourselves.  A sized entity is
+	// registered in all its footprint tiles, so the level's PathCostFunc sees
+	// it as a blocker at neighbours it already occupies.
+	if cost >= 100 && g.Entity != nil {
+		to := &g.Level.Data[toIdx]
+		if !TileDefinitions[to.Type].Solid {
+			x, y, z := to.Coords()
+			if blocker := g.Level.GetSolidEntityAt(x, y, z); blocker == g.Entity {
+				return 10
+			}
+		}
+	}
+	return cost
+}
+
+func (g *SizedGraph) PathEstimate(fromIdx, toIdx int) float64 {
+	return g.Level.PathEstimate(fromIdx, toIdx)
+}
+
 // ─── Time & lighting ─────────────────────────────────────────────────
 
 var sunIntensityTable = [24]int{
@@ -342,6 +415,56 @@ func (level *Level) InvalidateSunColumn(x, y int) {
 func (level *Level) GetEntities() []*ecs.Entity       { return level.Entities }
 func (level *Level) GetStaticEntities() []*ecs.Entity { return level.StaticEntities }
 
+// entityFootprint returns all tile positions occupied by an entity centered at (x,y,z).
+// Entities without a SizeComponent are treated as 1×1.
+// Centering: startX = x - w/2, startY = y - h/2 (integer division).
+func (level *Level) entityFootprint(x, y, z int, entity *ecs.Entity) [][3]int {
+	w, h := 1, 1
+	if entity.HasComponent(rlcomponents.Size) {
+		sc := entity.GetComponent(rlcomponents.Size).(*rlcomponents.SizeComponent)
+		if sc.Width > 0 {
+			w = sc.Width
+		}
+		if sc.Height > 0 {
+			h = sc.Height
+		}
+	}
+	startX := x - w/2
+	startY := y - h/2
+	tiles := make([][3]int, 0, w*h)
+	for dx := 0; dx < w; dx++ {
+		for dy := 0; dy < h; dy++ {
+			tx, ty := startX+dx, startY+dy
+			if level.InBounds(tx, ty, z) {
+				tiles = append(tiles, [3]int{tx, ty, z})
+			}
+		}
+	}
+	return tiles
+}
+
+// removeFromEntityPos removes a single entity from the entityPos bucket at (x,y,z).
+func (level *Level) removeFromEntityPos(x, y, z int, entity *ecs.Entity) {
+	if !level.InBounds(x, y, z) {
+		return
+	}
+	key := level.index(x, y, z)
+	entities := level.entityPos[key]
+	for i := 0; i < len(entities); i++ {
+		if entities[i] == entity {
+			copy(entities[i:], entities[i+1:])
+			entities[len(entities)-1] = nil
+			entities = entities[:len(entities)-1]
+			if len(entities) == 0 {
+				delete(level.entityPos, key)
+			} else {
+				level.entityPos[key] = entities
+			}
+			break
+		}
+	}
+}
+
 func (level *Level) PlaceEntity(x, y, z int, entity *ecs.Entity) {
 	if !level.InBounds(x, y, z) {
 		return
@@ -349,29 +472,18 @@ func (level *Level) PlaceEntity(x, y, z int, entity *ecs.Entity) {
 
 	pc := entity.GetComponent(rlcomponents.Position).(*rlcomponents.PositionComponent)
 
-	oldKey := level.index(pc.GetX(), pc.GetY(), pc.GetZ())
-	newKey := level.index(x, y, z)
-
-	// Remove from old position
-	entities := level.entityPos[oldKey]
-	for i := 0; i < len(entities); i++ {
-		if entities[i] == entity {
-			copy(entities[i:], entities[i+1:])
-			entities[len(entities)-1] = nil
-			entities = entities[:len(entities)-1]
-			if len(entities) == 0 {
-				delete(level.entityPos, oldKey)
-			} else {
-				level.entityPos[oldKey] = entities
-			}
-			break
-		}
+	// Remove from all tiles at old position
+	for _, t := range level.entityFootprint(pc.GetX(), pc.GetY(), pc.GetZ(), entity) {
+		level.removeFromEntityPos(t[0], t[1], t[2], entity)
 	}
 
-	// Add to new position
-	level.entityPos[newKey] = append(level.entityPos[newKey], entity)
-
 	pc.SetPosition(x, y, z)
+
+	// Add to all tiles at new position
+	for _, t := range level.entityFootprint(x, y, z, entity) {
+		key := level.index(t[0], t[1], t[2])
+		level.entityPos[key] = append(level.entityPos[key], entity)
+	}
 }
 
 func (level *Level) AddEntity(entity *ecs.Entity) {
@@ -391,23 +503,8 @@ func (level *Level) RemoveEntity(entity *ecs.Entity) {
 	if entity.HasComponent(rlcomponents.Position) {
 		pc := entity.GetComponent(rlcomponents.Position).(*rlcomponents.PositionComponent)
 		x, y, z := pc.GetX(), pc.GetY(), pc.GetZ()
-
-		if level.InBounds(x, y, z) {
-			key := level.index(x, y, z)
-			entities := level.entityPos[key]
-			for i := 0; i < len(entities); i++ {
-				if entities[i] == entity {
-					copy(entities[i:], entities[i+1:])
-					entities[len(entities)-1] = nil
-					entities = entities[:len(entities)-1]
-					if len(entities) == 0 {
-						delete(level.entityPos, key)
-					} else {
-						level.entityPos[key] = entities
-					}
-					break
-				}
-			}
+		for _, t := range level.entityFootprint(x, y, z, entity) {
+			level.removeFromEntityPos(t[0], t[1], t[2], entity)
 		}
 	}
 

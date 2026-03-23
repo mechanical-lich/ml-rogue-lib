@@ -120,34 +120,87 @@ func Move(entity *ecs.Entity, level rlworld.LevelInterface, deltaX, deltaY, delt
 	destY := pc.GetY() + deltaY
 	destZ := pc.GetZ() + deltaZ
 
-	canMove := true
-	blocker := level.GetSolidEntityAt(destX, destY, destZ)
-	if blocker != nil {
-		canMove = false
-		if blocker.HasComponent(rlcomponents.Door) {
-			door := blocker.GetComponent(rlcomponents.Door).(*rlcomponents.DoorComponent)
-			if CanPassThroughDoor(entity, door) {
-				canMove = true
+	w, h := 1, 1
+	if entity.HasComponent(rlcomponents.Size) {
+		sc := entity.GetComponent(rlcomponents.Size).(*rlcomponents.SizeComponent)
+		if sc.Width > 0 {
+			w = sc.Width
+		}
+		if sc.Height > 0 {
+			h = sc.Height
+		}
+	}
+	startX := destX - w/2
+	startY := destY - h/2
+
+	// Check every footprint tile for entity blockers.
+	entityBlocked := false
+	for dx := 0; dx < w && !entityBlocked; dx++ {
+		for dy := 0; dy < h && !entityBlocked; dy++ {
+			blocker := level.GetSolidEntityAt(startX+dx, startY+dy, destZ)
+			if blocker != nil && blocker != entity {
+				entityBlocked = true
+				if blocker.HasComponent(rlcomponents.Door) {
+					door := blocker.GetComponent(rlcomponents.Door).(*rlcomponents.DoorComponent)
+					if CanPassThroughDoor(entity, door) {
+						entityBlocked = false
+					}
+				}
+			}
+		}
+	}
+	if entityBlocked {
+		return true
+	}
+
+	// Check every footprint tile for passable terrain.
+	for dx := 0; dx < w; dx++ {
+		for dy := 0; dy < h; dy++ {
+			tx, ty := startX+dx, startY+dy
+			tile := level.GetTileAt(tx, ty, destZ)
+			if tile == nil || tile.IsSolid() || tile.IsWater() {
+				return false
+			}
+			if tile.IsAir() {
+				below := level.GetTileAt(tx, ty, destZ-1)
+				if below == nil || !below.IsSolid() {
+					return false
+				}
 			}
 		}
 	}
 
-	if canMove {
-		tile := level.GetTileAt(destX, destY, destZ)
-		if tile != nil && !tile.IsSolid() {
-			if tile.IsAir() {
-				// Stand on top of the solid tile below rather than entering air.
-				below := level.GetTileAt(destX, destY, destZ-1)
-				if below != nil && below.IsSolid() {
-					level.PlaceEntity(destX, destY, destZ, entity)
-				}
-			} else if !tile.IsWater() {
-				level.PlaceEntity(destX, destY, destZ, entity)
+	level.PlaceEntity(destX, destY, destZ, entity)
+	return false
+}
+
+// FootprintBlockers appends all solid entities that overlap with entity's
+// footprint at (destX, destY, destZ) to buf, excluding entity itself.
+// Useful for sized entities to find everything they'd bump into.
+func FootprintBlockers(entity *ecs.Entity, level rlworld.LevelInterface, destX, destY, destZ int, buf *[]*ecs.Entity) {
+	w, h := 1, 1
+	if entity.HasComponent(rlcomponents.Size) {
+		sc := entity.GetComponent(rlcomponents.Size).(*rlcomponents.SizeComponent)
+		if sc.Width > 0 {
+			w = sc.Width
+		}
+		if sc.Height > 0 {
+			h = sc.Height
+		}
+	}
+	startX := destX - w/2
+	startY := destY - h/2
+	*buf = (*buf)[:0]
+	seen := map[*ecs.Entity]bool{}
+	for dx := 0; dx < w; dx++ {
+		for dy := 0; dy < h; dy++ {
+			blocker := level.GetSolidEntityAt(startX+dx, startY+dy, destZ)
+			if blocker != nil && blocker != entity && !seen[blocker] {
+				seen[blocker] = true
+				*buf = append(*buf, blocker)
 			}
 		}
-		return false
 	}
-	return true
 }
 
 // HandleMovement moves and faces the entity. No-ops if all deltas are zero.

@@ -35,6 +35,7 @@ const (
 	Interaction     ecs.ComponentType = "Interaction"
 	Key             ecs.ComponentType = "Key"
 	TurnTaken       ecs.ComponentType = "TurnTaken"
+	Size            ecs.ComponentType = "Size"
 )
 
 func init() {
