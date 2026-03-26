@@ -22,15 +22,16 @@ const (
 // TileDefinition describes one category of tile (e.g. "grass", "stone_wall").
 // Games can embed this struct to add domain-specific fields.
 type TileDefinition struct {
-	Name       string        `json:"name"`
-	Solid      bool          `json:"solid"`
-	Water      bool          `json:"water"`
-	Door       bool          `json:"door"`
-	Air        bool          `json:"air"`
-	StairsUp   bool          `json:"stairsUp"`
-	StairsDown bool          `json:"stairsDown"`
-	AutoTile   int           `json:"autoTile"`
-	Variants   []TileVariant `json:"variants"`
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Solid       bool          `json:"solid"`
+	Water       bool          `json:"water"`
+	Door        bool          `json:"door"`
+	Air         bool          `json:"air"`
+	StairsUp    bool          `json:"stairsUp"`
+	StairsDown  bool          `json:"stairsDown"`
+	AutoTile    int           `json:"autoTile"`
+	Variants    []TileVariant `json:"variants"`
 }
 
 var (

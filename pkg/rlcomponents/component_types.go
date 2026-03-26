@@ -36,6 +36,8 @@ const (
 	Key             ecs.ComponentType = "Key"
 	TurnTaken       ecs.ComponentType = "TurnTaken"
 	Size            ecs.ComponentType = "Size"
+	Body            ecs.ComponentType = "Body"
+	BodyInventory   ecs.ComponentType = "BodyInventory"
 )
 
 func init() {

@@ -55,16 +55,29 @@ func CanPassThroughDoor(entity *ecs.Entity, door *rlcomponents.DoorComponent) bo
 	return false
 }
 
-// HandleDeath adds DeadComponent when Health reaches zero.
+// HandleDeath adds DeadComponent when a vital body part is broken/amputated,
+// or (legacy fallback) when Health reaches zero.
 // Returns true if the entity died.
 func HandleDeath(entity *ecs.Entity) bool {
-	if !entity.HasComponent(rlcomponents.Health) {
+	if entity.HasComponent(rlcomponents.Dead) {
+		return true
+	}
+	if entity.HasComponent(rlcomponents.Body) {
+		bc := entity.GetComponent(rlcomponents.Body).(*rlcomponents.BodyComponent)
+		for _, part := range bc.Parts {
+			if (part.Broken && part.KillsWhenBroken) || (part.Amputated && part.KillsWhenAmputated) {
+				entity.AddComponent(&rlcomponents.DeadComponent{})
+				return true
+			}
+		}
 		return false
 	}
-	hc := entity.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
-	if hc.Health <= 0 {
-		entity.AddComponent(&rlcomponents.DeadComponent{})
-		return true
+	if entity.HasComponent(rlcomponents.Health) {
+		hc := entity.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
+		if hc.Health <= 0 {
+			entity.AddComponent(&rlcomponents.DeadComponent{})
+			return true
+		}
 	}
 	return false
 }

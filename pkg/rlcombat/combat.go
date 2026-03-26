@@ -123,10 +123,10 @@ func InflictDamage(attacker, defender *ecs.Entity) {
 	}
 
 	// Resistances and weaknesses.
-	if hasResistance(defender, damageType) {
+	if HasResistance(defender, damageType) {
 		damage /= 2
 	}
-	if hasWeakness(defender, damageType) {
+	if HasWeakness(defender, damageType) {
 		damage *= 2
 	}
 	if damage <= 0 {
@@ -209,7 +209,7 @@ func Hit(level rlworld.LevelInterface, entity, entityHit *ecs.Entity, swap bool)
 	return true
 }
 
-func hasResistance(defender *ecs.Entity, damageType string) bool {
+func HasResistance(defender *ecs.Entity, damageType string) bool {
 	if !defender.HasComponent(rlcomponents.Stats) {
 		return false
 	}
@@ -235,7 +235,7 @@ func hasResistance(defender *ecs.Entity, damageType string) bool {
 	return false
 }
 
-func hasWeakness(defender *ecs.Entity, damageType string) bool {
+func HasWeakness(defender *ecs.Entity, damageType string) bool {
 	if !defender.HasComponent(rlcomponents.Stats) {
 		return false
 	}

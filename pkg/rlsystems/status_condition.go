@@ -1,6 +1,8 @@
 package rlsystems
 
 import (
+	"math/rand"
+
 	"github.com/mechanical-lich/ml-rogue-lib/pkg/rlcomponents"
 	"github.com/mechanical-lich/mlge/ecs"
 )
@@ -63,13 +65,34 @@ func (s *StatusConditionSystem) UpdateEntity(levelInterface interface{}, entity 
 		}
 
 		// Built-in damage effects.
-		if entity.HasComponent(rlcomponents.Health) {
-			hc := entity.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
-			switch se.effectName {
-			case "Poisoned":
-				hc.Health -= 1
-			case "Burning":
-				hc.Health -= 2
+		var dmg int
+		switch se.effectName {
+		case "Poisoned":
+			dmg = 1
+		case "Burning":
+			dmg = 2
+		}
+		if dmg > 0 {
+			if entity.HasComponent(rlcomponents.Body) {
+				bc := entity.GetComponent(rlcomponents.Body).(*rlcomponents.BodyComponent)
+				var available []string
+				for name, part := range bc.Parts {
+					if !part.Amputated {
+						available = append(available, name)
+					}
+				}
+				if len(available) > 0 {
+					name := available[rand.Intn(len(available))]
+					part := bc.Parts[name]
+					part.HP -= dmg
+					if part.HP <= 0 && !part.Broken {
+						part.Broken = true
+					}
+					bc.Parts[name] = part
+				}
+			} else if entity.HasComponent(rlcomponents.Health) {
+				hc := entity.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
+				hc.Health -= dmg
 			}
 		}
 
@@ -79,12 +102,28 @@ func (s *StatusConditionSystem) UpdateEntity(levelInterface interface{}, entity 
 	}
 
 	// Regeneration.
-	if entity.HasComponent(rlcomponents.Regeneration) && entity.HasComponent(rlcomponents.Health) {
+	if entity.HasComponent(rlcomponents.Regeneration) {
 		rc := entity.GetComponent(rlcomponents.Regeneration).(*rlcomponents.RegenerationComponent)
-		hc := entity.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
-		hc.Health += rc.Amount
-		if hc.Health > hc.MaxHealth {
-			hc.Health = hc.MaxHealth
+		if entity.HasComponent(rlcomponents.Body) {
+			bc := entity.GetComponent(rlcomponents.Body).(*rlcomponents.BodyComponent)
+			for name, part := range bc.Parts {
+				if !part.Amputated && part.HP < part.MaxHP {
+					part.HP += rc.Amount
+					if part.HP > part.MaxHP {
+						part.HP = part.MaxHP
+					}
+					if part.HP > 0 && part.Broken {
+						part.Broken = false
+					}
+					bc.Parts[name] = part
+				}
+			}
+		} else if entity.HasComponent(rlcomponents.Health) {
+			hc := entity.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
+			hc.Health += rc.Amount
+			if hc.Health > hc.MaxHealth {
+				hc.Health = hc.MaxHealth
+			}
 		}
 	}
 
