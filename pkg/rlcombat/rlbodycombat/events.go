@@ -1,4 +1,4 @@
-package v2
+package rlbodycombat
 
 import "github.com/mechanical-lich/mlge/event"
 
