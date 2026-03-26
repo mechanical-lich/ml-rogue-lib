@@ -20,7 +20,15 @@ For higher-level AI navigation (path following, range checks, target tracking) s
 func HandleDeath(entity *ecs.Entity) bool
 ```
 
-Checks whether the entity's `HealthComponent.Health` has dropped to zero or below. If so, adds a `DeadComponent` and returns `true`. Does nothing and returns `false` if the entity has no `HealthComponent`.
+Checks whether the entity should die and, if so, adds a `DeadComponent` and returns `true`.
+
+**Detection order:**
+
+1. If the entity already has `DeadComponent`, returns `true` immediately.
+2. If the entity has `BodyComponent`, checks all parts for a `KillsWhenBroken` or `KillsWhenAmputated` condition.
+3. Regardless of whether a `BodyComponent` is present, also checks `HealthComponent.Health <= 0`.
+
+This means an entity can carry both components: lethal body-part damage kills it via step 2, and legacy health reduction kills it via step 3.
 
 Call this at the start of an entity's update to bail out early if it just died.
 
@@ -107,6 +115,79 @@ func GetName(entity *ecs.Entity) string
 ```
 
 Returns the entity's `DescriptionComponent.Name`, or `"Unknown"` if the component is absent.
+
+---
+
+### FootprintBlockers
+
+```go
+func FootprintBlockers(entity *ecs.Entity, level rlworld.LevelInterface, destX, destY, destZ int, buf *[]*ecs.Entity)
+```
+
+Appends all solid entities that overlap the entity's footprint at `(destX, destY, destZ)` to `buf`, excluding `entity` itself. Useful for sized entities (those with `SizeComponent`) to enumerate every blocker before deciding whether to attack or open a door.
+
+---
+
+### FindByID
+
+```go
+func FindByID(level rlworld.LevelInterface, id string) *ecs.Entity
+```
+
+Searches all level entities for the first whose `DescriptionComponent.ID` matches `id`. Returns `nil` if not found or if `id` is empty.
+
+---
+
+### FindByTag
+
+```go
+func FindByTag(level rlworld.LevelInterface, tag string) []*ecs.Entity
+```
+
+Returns all entities whose `DescriptionComponent.Tags` slice contains `tag`.
+
+---
+
+### CheckInteraction
+
+```go
+func CheckInteraction(actor, target *ecs.Entity) bool
+```
+
+Fires all `InteractionComponent` triggers on `target` if it has one and has not yet been used (or is marked repeatable). Posts an `InteractionEvent` to MLGE's queued event manager for each trigger, and optionally posts an interaction prompt message. Returns `true` if triggers fired.
+
+---
+
+### CheckPassOver
+
+```go
+func CheckPassOver(mover *ecs.Entity, level rlworld.LevelInterface, x, y, z int)
+```
+
+Call after a successful `Move`. For each entity at `(x, y, z)` other than the mover:
+
+- Calls `CheckInteraction` (walk-over pressure plates, floor triggers, etc.).
+- Posts a random `PassOverDescription` message from the first entity that has one.
+
+---
+
+### CheckExcuseMe
+
+```go
+func CheckExcuseMe(bumped *ecs.Entity)
+```
+
+Posts a random `ExcuseMeAnnouncement` from `bumped`. Call this after a friendly position swap so the displaced entity can react.
+
+---
+
+### CheckDeathAnnouncement
+
+```go
+func CheckDeathAnnouncement(watcher *ecs.Entity, dying *ecs.Entity, level *rlworld.Level)
+```
+
+Posts a death message if `watcher` has line-of-sight to `dying` (same Z-level). Uses a random `DeathAnnouncements` string from the dying entity's `DescriptionComponent`, or `"<name> has died."` as a fallback. Call this before the entity is removed from the level.
 
 ---
 

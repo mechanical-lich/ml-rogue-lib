@@ -124,6 +124,26 @@ Returns `true` if the target at `(tX,tY)` is reachable from `(aX,aY)` via a stra
 
 ---
 
+### HasResistance
+
+```go
+func HasResistance(defender *ecs.Entity, damageType string) bool
+```
+
+Returns `true` if the entity resists `damageType` — either via `StatsComponent.Resistances` or via `ArmorComponent.Resistances` on any equipped item in the legacy `InventoryComponent` slots.
+
+---
+
+### HasWeakness
+
+```go
+func HasWeakness(defender *ecs.Entity, damageType string) bool
+```
+
+Returns `true` if the entity is weak to `damageType` via `StatsComponent.Weaknesses`.
+
+---
+
 ## Resistances and Weaknesses
 
 Resistances and weaknesses are stored as `[]string` on `StatsComponent`. Equipped armor pieces may also contribute resistances via `ArmorComponent.Resistances`. The damage type is matched case-sensitively.
@@ -152,6 +172,110 @@ func onPlayerBump(level rlworld.LevelInterface, player, target *ecs.Entity) {
     // Check if target died.
     if target.HasComponent(rlcomponents.Dead) {
         // award XP, play sound, etc.
+    }
+}
+```
+
+---
+
+# Combat v2
+
+`github.com/mechanical-lich/ml-rogue-lib/pkg/rlcombat/v2`
+
+An extended combat pipeline that routes damage to individual body parts when the defender has a `BodyComponent`. Falls back to the legacy `HealthComponent` path for entities without body parts (or when all parts are amputated). Import this package in place of `rlcombat` when using the body system.
+
+## Hit
+
+```go
+func Hit(level rlworld.LevelInterface, entity, entityHit *ecs.Entity, swap bool) bool
+```
+
+Performs a full melee attack. Returns `true` if the attack was executed.
+
+**Pipeline:**
+
+1. If both entities share a faction and `swap` is `true`, their positions are exchanged; returns `false`.
+2. Returns `false` if either entity lacks `StatsComponent`, or if the defender has neither `BodyComponent` nor `HealthComponent`.
+3. Rolls `1d20 + Dex modifier + weapon attack bonus` vs `defender AC + armor defense bonus`.
+4. **Natural 20** is always a critical hit (doubles damage).
+5. On a **hit**:
+   - If the defender has a `BodyComponent`, a random non-amputated part is chosen via `randomBodyPart`. Damage is applied via `applyBodyPartDamage`, which sets `Broken` and `Amputated` flags and checks `KillsWhen*`.
+   - If all parts are amputated (or no `BodyComponent`), damage is applied to `HealthComponent` instead.
+   - If a lethal condition is met, `HealthComponent.Health` is set to `0` and a `DeadComponent` is added.
+   - A `CombatEvent` is queued with full hit details.
+   - `ApplyStatusEffects` is called.
+6. On a **miss**: a "missed" message is posted and a miss `CombatEvent` is queued.
+7. Always calls `TriggerDefenses` on the defender.
+
+**Damage routing summary:**
+
+| Defender state | Damage target |
+|----------------|--------------|
+| Has `BodyComponent`, parts available | Random non-amputated body part |
+| Has `BodyComponent`, all parts amputated | `HealthComponent` (fallback) |
+| No `BodyComponent`, has `HealthComponent` | `HealthComponent` |
+| Neither | Attack is invalid; returns `false` |
+
+---
+
+## CombatEvent
+
+```go
+type CombatEvent struct {
+    X, Y, Z      int    // world position of the attacker
+    AttackerName string
+    DefenderName string
+    Damage       int    // 0 on a miss
+    DamageType   string
+    BodyPart     string // empty on miss or health-only hit
+    Miss         bool
+    Crit         bool
+    Broken       bool
+    Amputated    bool
+}
+
+const CombatEventType event.EventType = "CombatEvent"
+```
+
+Posted to MLGE's queued event system on every attack resolution. Register a listener to drive visual effects, floating damage numbers, or sound cues:
+
+```go
+import (
+    v2 "github.com/mechanical-lich/ml-rogue-lib/pkg/rlcombat/v2"
+    "github.com/mechanical-lich/mlge/event"
+)
+
+type fxHandler struct{}
+
+func (h *fxHandler) HandleEvent(e event.EventData) error {
+    ce, ok := e.(v2.CombatEvent)
+    if !ok || ce.Miss {
+        return nil
+    }
+    spawnHitParticle(ce.X, ce.Y, ce.Z, ce.DamageType, ce.Crit)
+    return nil
+}
+
+// At startup:
+event.GetQueuedInstance().RegisterListener(&fxHandler{}, v2.CombatEventType)
+```
+
+---
+
+## Usage Example
+
+```go
+import (
+    v2 "github.com/mechanical-lich/ml-rogue-lib/pkg/rlcombat/v2"
+    "github.com/mechanical-lich/ml-rogue-lib/pkg/rlcomponents"
+)
+
+// Entity with a body takes damage; vitals check kills it.
+func onPlayerBump(level rlworld.LevelInterface, player, target *ecs.Entity) {
+    v2.Hit(level, player, target, false)
+
+    if target.HasComponent(rlcomponents.Dead) {
+        // drop loot, award XP, play death sound
     }
 }
 ```

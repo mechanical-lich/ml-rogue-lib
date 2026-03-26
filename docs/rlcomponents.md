@@ -43,6 +43,8 @@ const (
     Item           = "Item"
     Armor          = "Armor"
     Weapon         = "Weapon"
+    Body           = "Body"
+    BodyInventory  = "BodyInventory"
 )
 ```
 
@@ -348,6 +350,97 @@ type ArmorComponent struct {
     Resistances  []string
 }
 ```
+
+---
+
+### BodyComponent
+
+```go
+type BodyPart struct {
+    Name                string
+    Description         string
+    AttachedTo          []string   // parts this part connects to (informational)
+    HP                  int
+    MaxHP               int
+    Broken              bool
+    Amputated           bool
+    KillsWhenBroken     bool
+    KillsWhenAmputated  bool
+    CompatibleItemSlots []ItemSlot
+}
+
+type BodyComponent struct {
+    Parts map[string]BodyPart
+}
+```
+
+Replaces (or supplements) `HealthComponent` with a per-part damage model. Each named part tracks its own HP, break state, and amputation state.
+
+**Methods:**
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `AddPart` | `(part BodyPart)` | Registers a body part by `part.Name`; initialises `Parts` if nil |
+
+**Part lifecycle:**
+
+- A part becomes **Broken** when `HP` drops to zero or below.
+- A part becomes **Amputated** when a single hit deals `damage >= MaxHP * 2`.
+- If `KillsWhenBroken` or `KillsWhenAmputated` is `true`, a `DeadComponent` is added to the entity when that condition is met.
+
+**Death detection with `BodyComponent`:**
+
+`rlentity.HandleDeath` checks vital part conditions first (broken/amputated with `KillsWhen*`). If none are met it falls through to the `HealthComponent` check, so both systems can coexist on the same entity.
+
+**Status effect damage with `BodyComponent`:**
+
+`StatusConditionSystem` routes poison/burning damage to a random non-amputated body part. If all parts are amputated it falls back to `HealthComponent`.
+
+---
+
+### BodyInventoryComponent
+
+```go
+type BodyInventoryComponent struct {
+    Equipped          map[string]*ecs.Entity // keyed by BodyPart.Name
+    Bag               []*ecs.Entity
+    StartingInventory []string
+}
+```
+
+An inventory whose equipment slots map directly to body-part names. Use alongside `BodyComponent`. A body part accepts an item when the item's `ItemComponent.Slot` is listed in `BodyPart.CompatibleItemSlots`.
+
+**Bag methods** (mirror `InventoryComponent`):
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `AddItem` | `(item *ecs.Entity)` | Appends to `Bag` |
+| `RemoveItem` | `(item *ecs.Entity) bool` | Removes by pointer |
+| `RemoveItemByName` | `(name string) bool` | Removes first match by `Blueprint` name |
+| `RemoveAll` | `(name string) bool` | Removes all matching `DescriptionComponent.Name` |
+| `HasItem` | `(name string) bool` | Returns true if `Bag` contains a matching item |
+
+**Equip methods:**
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `EquipToBodyPart` | `(item *ecs.Entity, partName string)` | Places item in the named part slot; bumps existing item to `Bag` |
+| `AutoEquip` | `(item *ecs.Entity, bc *BodyComponent) bool` | Finds the first compatible, non-amputated slot; prefers empty slots |
+| `Unequip` | `(partName string) *ecs.Entity` | Returns equipped item to `Bag`; returns nil if empty |
+| `UnequipAll` | `()` | Returns all equipped items to `Bag` |
+| `HandleAmputation` | `(partName string) *ecs.Entity` | Unequips the amputated part's item |
+| `EquipBest` | `(slot ItemSlot, bc *BodyComponent)` | Re-equips the highest-value bag item for the given slot |
+| `EquipAllBest` | `(bc *BodyComponent)` | Calls `EquipBest` for every slot accepted by any body part |
+
+**Combat stat methods:**
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `GetAttackModifier` | `() int` | Sum of `WeaponComponent.AttackBonus` from all equipped weapons |
+| `GetAttackDice` | `() string` | Combined dice string for all equipped weapons |
+| `GetDefenseModifier` | `() int` | Sum of `ArmorComponent.DefenseBonus` from all equipped armor |
+| `GetDamageType` | `() string` | Damage type of the first equipped weapon, or `""` |
+| `GetResistances` | `() []string` | All resistance types from all equipped armor |
 
 ---
 

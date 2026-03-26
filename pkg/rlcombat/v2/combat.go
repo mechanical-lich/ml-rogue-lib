@@ -195,7 +195,10 @@ func Hit(level rlworld.LevelInterface, entity, entityHit *ecs.Entity, swap bool)
 
 	hasBody := entityHit.HasComponent(rlcomponents.Body)
 
-	if !hasBody || !entityHit.HasComponent(rlcomponents.Stats) || !entity.HasComponent(rlcomponents.Stats) {
+	if !entity.HasComponent(rlcomponents.Stats) || !entityHit.HasComponent(rlcomponents.Stats) {
+		return false
+	}
+	if !hasBody && !entityHit.HasComponent(rlcomponents.Health) {
 		return false
 	}
 
@@ -215,16 +218,34 @@ func Hit(level rlworld.LevelInterface, entity, entityHit *ecs.Entity, swap bool)
 	hitLanded := crit || roll.Result+mod > hitSc.AC+acBonus
 
 	if hitLanded {
-		bc := entityHit.GetComponent(rlcomponents.Body).(*rlcomponents.BodyComponent)
-		partName, part := randomBodyPart(bc)
+		if hasBody {
+			bc := entityHit.GetComponent(rlcomponents.Body).(*rlcomponents.BodyComponent)
+			partName, part := randomBodyPart(bc)
 
-		if part != nil {
-			damage, damageType := rollDamage(entity, entityHit, crit, partName)
-			broken, amputated, kills := applyBodyPartDamage(bc, partName, damage)
+			if part != nil {
+				damage, damageType := rollDamage(entity, entityHit, crit, partName)
+				broken, amputated, kills := applyBodyPartDamage(bc, partName, damage)
 
-			postHitMessage(entity, entityHit, partName, damage, damageType, crit, broken, amputated, pc)
+				postHitMessage(entity, entityHit, partName, damage, damageType, crit, broken, amputated, pc)
 
-			if kills {
+				if kills {
+					if entityHit.HasComponent(rlcomponents.Health) {
+						entityHit.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent).Health = 0
+					}
+					entityHit.AddComponent(&rlcomponents.DeadComponent{})
+				}
+			} else {
+				// All parts are amputated — entity cannot survive.
+				entityHit.AddComponent(&rlcomponents.DeadComponent{})
+			}
+		} else {
+			// No body — damage goes directly to HealthComponent.
+			damage, damageType := rollDamage(entity, entityHit, crit, "")
+			hc := entityHit.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
+			hc.Health -= damage
+			postHitMessage(entity, entityHit, "", damage, damageType, crit, false, false, pc)
+			if hc.Health <= 0 {
+				hc.Health = 0
 				entityHit.AddComponent(&rlcomponents.DeadComponent{})
 			}
 		}

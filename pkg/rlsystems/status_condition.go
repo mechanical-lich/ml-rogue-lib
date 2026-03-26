@@ -89,6 +89,9 @@ func (s *StatusConditionSystem) UpdateEntity(levelInterface interface{}, entity 
 						part.Broken = true
 					}
 					bc.Parts[name] = part
+				} else {
+					// All parts are amputated — entity cannot survive.
+					entity.AddComponent(&rlcomponents.DeadComponent{})
 				}
 			} else if entity.HasComponent(rlcomponents.Health) {
 				hc := entity.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)

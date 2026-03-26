@@ -209,6 +209,8 @@ func Hit(level rlworld.LevelInterface, entity, entityHit *ecs.Entity, swap bool)
 	return true
 }
 
+// HasResistance returns true if the defender resists damageType, either via
+// StatsComponent.Resistances or via ArmorComponent.Resistances on any equipped item.
 func HasResistance(defender *ecs.Entity, damageType string) bool {
 	if !defender.HasComponent(rlcomponents.Stats) {
 		return false
@@ -235,6 +237,7 @@ func HasResistance(defender *ecs.Entity, damageType string) bool {
 	return false
 }
 
+// HasWeakness returns true if the defender is weak to damageType via StatsComponent.Weaknesses.
 func HasWeakness(defender *ecs.Entity, damageType string) bool {
 	if !defender.HasComponent(rlcomponents.Stats) {
 		return false

@@ -109,16 +109,22 @@ Describes one category of tile (e.g. "grass", "stone_wall"). Loaded from a JSON 
 
 ```go
 type TileDefinition struct {
-    Name       string        `json:"name"`
-    Solid      bool          `json:"solid"`
-    Water      bool          `json:"water"`
-    Door       bool          `json:"door"`
-    Air        bool          `json:"air"`
-    StairsUp   bool          `json:"stairsUp"`
-    StairsDown bool          `json:"stairsDown"`
-    AutoTile   int           `json:"autoTile"`
-    Variants   []TileVariant `json:"variants"`
+    Name        string        `json:"name"`
+    Description string        `json:"description"`
+    Solid       bool          `json:"solid"`
+    Water       bool          `json:"water"`
+    Door        bool          `json:"door"`
+    Air         bool          `json:"air"`
+    StairsUp    bool          `json:"stairsUp"`
+    StairsDown  bool          `json:"stairsDown"`
+    AutoTile    int           `json:"autoTile"`
+    Variants    []TileVariant `json:"variants"`
 }
+```
+
+`Description` is a human-readable flavour string shown in hover/look panels. It is optional — leave it empty to suppress display.
+
+```go
 
 type TileVariant struct {
     Variant int `json:"variant"`

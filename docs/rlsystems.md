@@ -115,7 +115,9 @@ type StatusConditionSystem struct {
 | `"Burning"` | −2 HP |
 | `"Alerted"` | 0 (marker only; decays to remove alert state) |
 
-`Regeneration` is handled separately after the status loop: restores `RegenerationComponent.Amount` HP per turn, capped at `MaxHealth`.
+**Damage routing:** when the entity has a `BodyComponent`, damage is applied to a random non-amputated body part. If all parts are amputated, it falls back to `HealthComponent`. Entities without a `BodyComponent` take damage directly to `HealthComponent`.
+
+`Regeneration` is handled separately after the status loop: restores `RegenerationComponent.Amount` HP per turn, capped at `MaxHealth`. Regeneration also clears the `Broken` flag on a part once its HP returns above zero.
 
 ### Adding Custom Statuses
 

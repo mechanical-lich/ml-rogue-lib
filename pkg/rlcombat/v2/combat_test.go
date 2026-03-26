@@ -142,7 +142,7 @@ func TestApplyBodyPartDamage_KillsWhenVitalPartAmputated(t *testing.T) {
 	assert.True(t, kills)
 }
 
-func TestApplyBodyPartDamage_DoesNotBrokenAlreadyBroken(t *testing.T) {
+func TestApplyBodyPartDamage_DoesNotBreakAlreadyBroken(t *testing.T) {
 	bc := &rlcomponents.BodyComponent{}
 	bc.AddPart(rlcomponents.BodyPart{Name: "arm", HP: 0, MaxHP: 10, Broken: true})
 
@@ -362,16 +362,14 @@ func TestHit_WithoutBodyComponent_DamagesHealth(t *testing.T) {
 // Hit — all body parts amputated falls back to health
 // =============================================================================
 
-func TestHit_AllPartsAmputated_FallsBackToHealth(t *testing.T) {
+func TestHit_AllPartsAmputated_KillsEntity(t *testing.T) {
 	attacker := guaranteedHitAttacker("warrior")
 	defender := newCombatant("goblin", "", 10, 1, "1d4")
 	addBody(defender, rlcomponents.BodyPart{Name: "arm", HP: 0, MaxHP: 10, Amputated: true})
-	addHealth(defender, 50)
 
 	Hit(&stubLevel{}, attacker, defender, false)
 
-	hc := defender.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
-	assert.Less(t, hc.Health, 50, "health fallback should apply when all parts are amputated")
+	assert.True(t, defender.HasComponent(rlcomponents.Dead), "fully-amputated entity should be marked dead")
 }
 
 // =============================================================================
