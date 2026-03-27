@@ -38,6 +38,7 @@ const (
 	Size            ecs.ComponentType = "Size"
 	Body            ecs.ComponentType = "Body"
 	BodyInventory   ecs.ComponentType = "BodyInventory"
+	Drops           ecs.ComponentType = "Drops"
 )
 
 func init() {

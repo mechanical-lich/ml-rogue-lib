@@ -69,17 +69,14 @@ func Los(level *rlworld.Level, pX, pY, tX, tY, z int) bool {
 	}
 }
 
-// blocksLos returns true if a solid entity at (x,y,z) blocks line of sight.
-// A closed door blocks LOS; an open door does not.
+// blocksLos returns true if a closed door entity exists at (x,y,z).
+// Only doors affect LOS; other solid entities (enemies, furniture) do not.
 func blocksLos(level *rlworld.Level, x, y, z int) bool {
 	e := level.GetSolidEntityAt(x, y, z)
-	if e == nil {
+	if e == nil || !e.HasComponent(rlcomponents.Door) {
 		return false
 	}
-	if e.HasComponent(rlcomponents.Door) {
-		return !e.GetComponent(rlcomponents.Door).(*rlcomponents.DoorComponent).Open
-	}
-	return true
+	return !e.GetComponent(rlcomponents.Door).(*rlcomponents.DoorComponent).Open
 }
 
 // UpdateFieldOfView marks all tiles within radius of (x,y,z) as seen
