@@ -13,7 +13,7 @@ type EnergyComponent struct {
 }
 
 func (ec EnergyComponent) GetType() ecs.ComponentType {
-	return EnergyType
+	return Energy
 }
 
 // CanAct returns true if the entity has enough energy to take an action.
