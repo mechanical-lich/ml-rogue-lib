@@ -29,8 +29,9 @@ type TileDefinition struct {
 	Door        bool          `json:"door"`
 	Air         bool          `json:"air"`
 	StairsUp    bool          `json:"stairsUp"`
-	StairsDown  bool          `json:"stairsDown"`
-	AutoTile    int           `json:"autoTile"`
+	StairsDown    bool          `json:"stairsDown"`
+	MovementCost  int           `json:"movementCost"`
+	AutoTile      int           `json:"autoTile"`
 	Variants    []TileVariant `json:"variants"`
 }
 

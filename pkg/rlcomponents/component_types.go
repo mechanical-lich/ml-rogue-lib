@@ -39,6 +39,7 @@ const (
 	Body            ecs.ComponentType = "Body"
 	BodyInventory   ecs.ComponentType = "BodyInventory"
 	Drops           ecs.ComponentType = "Drops"
+	EnergyType      ecs.ComponentType = "Energy"
 )
 
 func init() {
