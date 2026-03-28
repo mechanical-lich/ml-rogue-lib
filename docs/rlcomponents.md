@@ -18,8 +18,10 @@ All constants are of type `ecs.ComponentType` (a `string`).
 const (
     Health         = "Health"
     Stats          = "Stats"
+    Energy         = "Energy"
     Initiative     = "Initiative"
     MyTurn         = "MyTurn"
+    TurnTaken      = "TurnTaken"
     Dead           = "Dead"
     Description    = "Description"
     Solid          = "Solid"
@@ -123,6 +125,37 @@ Display name and optional faction. Entities sharing the same non-empty `Faction`
 
 ---
 
+### EnergyComponent
+
+```go
+type EnergyComponent struct {
+    Speed          int
+    Energy         int
+    LastActionCost int
+}
+```
+
+Tick-up action point system. Each tick, `Energy` increases by `Speed`. The entity can act whenever `Energy > 0`. Actions set `LastActionCost`, which is deducted by `SpendTurn`. Leftover energy carries over, enabling multi-action turns. See [`rlenergy`](rlenergy.html) for the turn management helpers that drive this component.
+
+**Methods:**
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `CanAct` | `() bool` | Returns `true` if `Energy > 0` |
+| `SpendTurn` | `() int` | Deducts `LastActionCost` from `Energy`, resets `LastActionCost`, returns the cost |
+
+---
+
+### TurnTakenComponent
+
+Marker component added by game systems when an entity has consumed its turn. `ResolveTurn` (in `rlenergy`) checks for both `MyTurn` and `TurnTaken` before deducting cost and stripping markers.
+
+```go
+func GetTurnTaken() *TurnTakenComponent
+```
+
+---
+
 ### InitiativeComponent
 
 ```go
@@ -139,7 +172,7 @@ Controls turn timing. `Ticks` decrements each frame by `InitiativeSystem.Speed`.
 
 ### MyTurnComponent
 
-A marker component added by `InitiativeSystem` when an entity's turn arrives. Removed by `CleanUpSystem` at the end of each frame. Systems that should act once per turn check for this component.
+A marker component added by `InitiativeSystem` or `rlenergy.AdvanceEnergy` when an entity's turn arrives. Removed by cleanup logic at the end of each frame. Systems that should act once per turn check for this component.
 
 ```go
 // GetMyTurn returns a pooled *MyTurnComponent.

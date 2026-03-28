@@ -17,6 +17,7 @@ Rather than prescribing a specific game loop, the library is intentionally open:
 ## Key Features
 
 - **Rich Component Library** — Position, Health, Stats, Initiative, Inventory, AI, status effects, doors, lighting, and more
+- **Energy/Action Point System** — CDDA-style tick-up energy with variable action costs, terrain movement modifiers, and multi-action turns
 - **Turn-Based Initiative** — Tick-down initiative counter with nocturnal/diurnal scheduling and alert overrides
 - **D&D-Style Combat** — Full attack-roll pipeline: to-hit vs AC, damage dice, resistances, weaknesses, and status effect transfer
 - **AI Behaviours** — Wander, Hostile (pursue + attack), and Defensive AIs with pluggable pathfinding
@@ -37,6 +38,7 @@ Rather than prescribing a specific game loop, the library is intentionally open:
 | [`rlworld`](rlworld.html) | `LevelInterface` / `TileInterface` contracts + GC-optimized base `Level`, `Tile`, and `TileDefinition` types |
 | [`rlfov`](rlfov.html) | Line-of-sight (Bresenham) and field-of-view with built-in fog-of-war explored state |
 | [`rlcomponents`](rlcomponents.html) | ECS component types and structs |
+| [`rlenergy`](rlenergy.html) | CDDA-style energy/action-point turn management |
 | [`rlai`](rlai.html) | AI navigation helpers (target tracking, range checks, path following) |
 | [`rlcombat`](rlcombat.html) | D&D-style melee combat pipeline |
 | [`rlentity`](rlentity.html) | Stateless entity helpers (move, face, eat, swap, death detection) |
