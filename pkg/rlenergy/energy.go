@@ -14,8 +14,8 @@ func ResolveTurn(entity *ecs.Entity) bool {
 	if !entity.HasComponent(rlcomponents.MyTurn) || !entity.HasComponent(rlcomponents.TurnTaken) {
 		return false
 	}
-	if entity.HasComponent(rlcomponents.EnergyType) {
-		ec := entity.GetComponent(rlcomponents.EnergyType).(*rlcomponents.EnergyComponent)
+	if entity.HasComponent(rlcomponents.Energy) {
+		ec := entity.GetComponent(rlcomponents.Energy).(*rlcomponents.EnergyComponent)
 		ec.SpendTurn()
 	}
 	entity.RemoveComponent(rlcomponents.MyTurn)
@@ -26,10 +26,10 @@ func ResolveTurn(entity *ecs.Entity) bool {
 // CanAct returns true if the entity has an EnergyComponent with enough
 // energy to take an action.
 func CanAct(entity *ecs.Entity) bool {
-	if !entity.HasComponent(rlcomponents.EnergyType) {
+	if !entity.HasComponent(rlcomponents.Energy) {
 		return false
 	}
-	ec := entity.GetComponent(rlcomponents.EnergyType).(*rlcomponents.EnergyComponent)
+	ec := entity.GetComponent(rlcomponents.Energy).(*rlcomponents.EnergyComponent)
 	return ec.CanAct()
 }
 
@@ -51,10 +51,10 @@ func GrantTurn(entity *ecs.Entity) bool {
 // Returns (playerGotTurn, anyGotTurn).
 func AdvanceEnergy(entities []*ecs.Entity, player *ecs.Entity) (playerGotTurn, anyGotTurn bool) {
 	for _, entity := range entities {
-		if !entity.HasComponent(rlcomponents.EnergyType) {
+		if !entity.HasComponent(rlcomponents.Energy) {
 			continue
 		}
-		ec := entity.GetComponent(rlcomponents.EnergyType).(*rlcomponents.EnergyComponent)
+		ec := entity.GetComponent(rlcomponents.Energy).(*rlcomponents.EnergyComponent)
 		ec.Energy += ec.Speed
 
 		if ec.CanAct() && !entity.HasComponent(rlcomponents.MyTurn) {
@@ -87,8 +87,8 @@ func RegrantTurns(entities []*ecs.Entity, player *ecs.Entity) (playerGotTurn, an
 // SetActionCost records the energy cost of the action an entity just took.
 // The cost is consumed by ResolveTurn or SpendTurn.
 func SetActionCost(entity *ecs.Entity, cost int) {
-	if entity.HasComponent(rlcomponents.EnergyType) {
-		ec := entity.GetComponent(rlcomponents.EnergyType).(*rlcomponents.EnergyComponent)
+	if entity.HasComponent(rlcomponents.Energy) {
+		ec := entity.GetComponent(rlcomponents.Energy).(*rlcomponents.EnergyComponent)
 		ec.LastActionCost = cost
 	}
 }
