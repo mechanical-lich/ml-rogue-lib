@@ -15,9 +15,11 @@ const (
 
 // ItemComponent marks an entity as an item that can be picked up and equipped.
 type ItemComponent struct {
-	Slot   ItemSlot
-	Effect string // "heal", "cure", etc.
-	Value  int
+	Slot        ItemSlot
+	Effect      string // "heal", "cure", etc.
+	Value       int
+	Name        string
+	Description string
 }
 
 func (ic ItemComponent) GetType() ecs.ComponentType {
