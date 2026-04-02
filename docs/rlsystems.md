@@ -109,26 +109,43 @@ type StatusConditionSystem struct {
 
 ### Built-in Effects
 
-| Effect | Damage per turn |
-|--------|----------------|
+| Effect | Per-turn behaviour |
+|--------|--------------------|
 | `"Poisoned"` | −1 HP |
 | `"Burning"` | −2 HP |
-| `"Alerted"` | 0 (marker only; decays to remove alert state) |
+| `"Alerted"` | Decay only — removes the alert state when it expires |
+| `"StatCondition"` | Applies `StatConditionComponent.Mods` on first tick via `ConditionModifier.ApplyOnce`; reverts on expiry |
+| `"DamageCondition"` | Calls `DamageConditionComponent.Roll()` and routes the result through the standard damage path |
 
-**Damage routing:** when the entity has a `BodyComponent`, damage is applied to a random non-amputated body part. If all parts are amputated, it falls back to `HealthComponent`. Entities without a `BodyComponent` take damage directly to `HealthComponent`.
+**`ConditionModifier` — automatic apply/revert:** status components that implement this interface have `ApplyOnce` called on the first tick and `Revert` called immediately before the component is removed. `HasteComponent`, `SlowedComponent`, and `StatConditionComponent` all use this mechanism.
+
+**Damage routing:** when the entity has a `BodyComponent`, damage is applied to a random non-amputated body part. If all parts are amputated the entity receives `DeadComponent`. Entities without a `BodyComponent` take damage directly to `HealthComponent`.
 
 `Regeneration` is handled separately after the status loop: restores `RegenerationComponent.Amount` HP per turn, capped at `MaxHealth`. Regeneration also clears the `Broken` flag on a part once its HP returns above zero.
 
-### Adding Custom Statuses
+### Registering Speed-Modifying Statuses
+
+`HasteComponent` and `SlowedComponent` implement `ConditionModifier` and must be registered in `ExtraStatuses` so the system ticks them and calls `ApplyOnce`/`Revert` at the right time:
 
 ```go
 statusSystem := &rlsystems.StatusConditionSystem{
     ExtraStatuses: map[string]ecs.ComponentType{
-        "Frozen": rlcomponents.Frozen, // your custom component type
+        "Haste":  rlcomponents.Haste,
+        "Slowed": rlcomponents.Slowed,
+    },
+}
+```
+
+### Adding Fully Custom Statuses
+
+```go
+statusSystem := &rlsystems.StatusConditionSystem{
+    ExtraStatuses: map[string]ecs.ComponentType{
+        "Frozen": mycomponents.Frozen,
     },
     OnStatusEffect: func(entity *ecs.Entity, effectName string) {
         if effectName == "Frozen" {
-            // slow the entity, play ice sound, etc.
+            // play ice sound, spawn FX entity, etc.
         }
     },
 }

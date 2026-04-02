@@ -7,6 +7,34 @@ import (
 	"github.com/mechanical-lich/mlge/ecs"
 )
 
+// applyStatusDamage deals dmg to a random non-amputated body part, or directly
+// to Health if the entity has no BodyComponent.
+func applyStatusDamage(entity *ecs.Entity, dmg int) {
+	if entity.HasComponent(rlcomponents.Body) {
+		bc := entity.GetComponent(rlcomponents.Body).(*rlcomponents.BodyComponent)
+		var available []string
+		for name, part := range bc.Parts {
+			if !part.Amputated {
+				available = append(available, name)
+			}
+		}
+		if len(available) > 0 {
+			name := available[rand.Intn(len(available))]
+			part := bc.Parts[name]
+			part.HP -= dmg
+			if part.HP <= 0 && !part.Broken {
+				part.Broken = true
+			}
+			bc.Parts[name] = part
+		} else {
+			entity.AddComponent(&rlcomponents.DeadComponent{})
+		}
+	} else if entity.HasComponent(rlcomponents.Health) {
+		hc := entity.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
+		hc.Health -= dmg
+	}
+}
+
 // statusEntry pairs a decaying component type with its per-turn effect name.
 type statusEntry struct {
 	componentType ecs.ComponentType
@@ -41,15 +69,17 @@ func (s *StatusConditionSystem) Requires() []ecs.ComponentType {
 	return statusConditionRequires
 }
 
-func (s *StatusConditionSystem) UpdateSystem(data interface{}) error {
+func (s *StatusConditionSystem) UpdateSystem(data any) error {
 	return nil
 }
 
-func (s *StatusConditionSystem) UpdateEntity(levelInterface interface{}, entity *ecs.Entity) error {
+func (s *StatusConditionSystem) UpdateEntity(levelInterface any, entity *ecs.Entity) error {
 	statuses := []statusEntry{
 		{rlcomponents.Poisoned, "Poisoned"},
 		{rlcomponents.Alerted, "Alerted"},
 		{rlcomponents.Burning, "Burning"},
+		{rlcomponents.StatCondition, "StatCondition"},
+		{rlcomponents.DamageCondition, "DamageCondition"},
 	}
 	for name, ct := range s.ExtraStatuses {
 		statuses = append(statuses, statusEntry{ct, name})
@@ -62,13 +92,13 @@ func (s *StatusConditionSystem) UpdateEntity(levelInterface interface{}, entity 
 		dc := entity.GetComponent(se.componentType).(rlcomponents.DecayingComponent)
 
 		// Apply speed-modifying effects once.
-		if sm, ok := dc.(rlcomponents.SpeedModifier); ok {
+		if sm, ok := dc.(rlcomponents.ConditionModifier); ok {
 			sm.ApplyOnce(entity)
 		}
 
 		if dc.Decay() {
 			// Revert speed-modifying effects before removing.
-			if sm, ok := dc.(rlcomponents.SpeedModifier); ok {
+			if sm, ok := dc.(rlcomponents.ConditionModifier); ok {
 				sm.Revert(entity)
 			}
 			entity.RemoveComponent(se.componentType)
@@ -81,32 +111,11 @@ func (s *StatusConditionSystem) UpdateEntity(levelInterface interface{}, entity 
 			dmg = 1
 		case "Burning":
 			dmg = 2
+		case "DamageCondition":
+			dmg = dc.(*rlcomponents.DamageConditionComponent).Roll()
 		}
 		if dmg > 0 {
-			if entity.HasComponent(rlcomponents.Body) {
-				bc := entity.GetComponent(rlcomponents.Body).(*rlcomponents.BodyComponent)
-				var available []string
-				for name, part := range bc.Parts {
-					if !part.Amputated {
-						available = append(available, name)
-					}
-				}
-				if len(available) > 0 {
-					name := available[rand.Intn(len(available))]
-					part := bc.Parts[name]
-					part.HP -= dmg
-					if part.HP <= 0 && !part.Broken {
-						part.Broken = true
-					}
-					bc.Parts[name] = part
-				} else {
-					// All parts are amputated — entity cannot survive.
-					entity.AddComponent(&rlcomponents.DeadComponent{})
-				}
-			} else if entity.HasComponent(rlcomponents.Health) {
-				hc := entity.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
-				hc.Health -= dmg
-			}
+			applyStatusDamage(entity, dmg)
 		}
 
 		if s.OnStatusEffect != nil {

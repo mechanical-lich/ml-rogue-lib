@@ -126,7 +126,7 @@ func TestBurning_ExpiresAfterDuration(t *testing.T) {
 }
 
 // =============================================================================
-// Haste — SpeedModifier apply/revert
+// Haste — ConditionModifier apply/revert
 // =============================================================================
 
 func TestHaste_DoublesSpeed(t *testing.T) {
@@ -164,7 +164,7 @@ func TestHaste_RevertsSpeedOnExpiry(t *testing.T) {
 }
 
 // =============================================================================
-// Slowed — SpeedModifier apply/revert
+// Slowed — ConditionModifier apply/revert
 // =============================================================================
 
 func TestSlowed_HalvesSpeed(t *testing.T) {
@@ -187,6 +187,71 @@ func TestSlowed_RevertsSpeedOnExpiry(t *testing.T) {
 	assert.False(t, e.HasComponent(rlcomponents.Slowed))
 	ec := e.GetComponent(rlcomponents.Energy).(*rlcomponents.EnergyComponent)
 	assert.Equal(t, 100, ec.Speed, "speed must be restored after Slowed expires")
+}
+
+// =============================================================================
+// DamageCondition
+// =============================================================================
+
+func TestDamageCondition_DealsDamageToHealth(t *testing.T) {
+	e := withHealth(newEntity(), 20)
+	e.AddComponent(&rlcomponents.DamageConditionComponent{
+		Name:       "Venom",
+		Duration:   3,
+		DamageDice: "3", // constant 3 damage
+		DamageType: "poison",
+	})
+
+	tick(baseSystem(), e)
+
+	hc := e.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
+	assert.Equal(t, 17, hc.Health)
+}
+
+func TestDamageCondition_DealsDamageToBodyPart(t *testing.T) {
+	e := withBody(newEntity(), rlcomponents.BodyPart{Name: "torso", HP: 20, MaxHP: 20})
+	e.AddComponent(&rlcomponents.DamageConditionComponent{
+		Name:       "Acid Burn",
+		Duration:   3,
+		DamageDice: "2",
+		DamageType: "acid",
+	})
+
+	tick(baseSystem(), e)
+
+	bc := e.GetComponent(rlcomponents.Body).(*rlcomponents.BodyComponent)
+	assert.Equal(t, 18, bc.Parts["torso"].HP)
+}
+
+func TestDamageCondition_ExpiresAfterDuration(t *testing.T) {
+	e := withHealth(newEntity(), 20)
+	e.AddComponent(&rlcomponents.DamageConditionComponent{
+		Name:       "Venom",
+		Duration:   2,
+		DamageDice: "1",
+	})
+	sys := baseSystem()
+
+	tick(sys, e)
+	tick(sys, e)
+
+	assert.False(t, e.HasComponent(rlcomponents.DamageCondition))
+}
+
+func TestDamageCondition_DiceRollDamageIsWithinRange(t *testing.T) {
+	e := withHealth(newEntity(), 1000)
+	e.AddComponent(&rlcomponents.DamageConditionComponent{
+		Name:       "Venom",
+		Duration:   1,
+		DamageDice: "1d6",
+	})
+
+	tick(baseSystem(), e)
+
+	hc := e.GetComponent(rlcomponents.Health).(*rlcomponents.HealthComponent)
+	dmg := 1000 - hc.Health
+	assert.GreaterOrEqual(t, dmg, 1)
+	assert.LessOrEqual(t, dmg, 6)
 }
 
 // =============================================================================

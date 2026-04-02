@@ -36,6 +36,10 @@ const (
     Poisoned       = "Poisoned"
     Poisonous      = "Poisonous"
     Burning        = "Burning"
+    Haste          = "Haste"
+    Slowed         = "Slowed"
+    DamageCondition = "DamageCondition"
+    StatCondition  = "StatCondition"
     Regeneration   = "Regeneration"
     LightSensitive = "LightSensitive"
     Light          = "Light"
@@ -260,6 +264,15 @@ type DecayingComponent interface {
 }
 ```
 
+Effects that modify entity stats while active also implement `ConditionModifier`. The `StatusConditionSystem` calls `ApplyOnce` on the first tick and `Revert` when the component is removed.
+
+```go
+type ConditionModifier interface {
+    ApplyOnce(entity *ecs.Entity)
+    Revert(entity *ecs.Entity)
+}
+```
+
 ### AlertedComponent
 
 ```go
@@ -297,6 +310,107 @@ type BurningComponent struct { Duration int }
 ```
 
 Deals 2 HP damage per turn via `StatusConditionSystem`. Decays over `Duration` turns.
+
+---
+
+### HasteComponent
+
+```go
+type HasteComponent struct { Duration int }
+```
+
+Doubles the entity's `EnergyComponent.Speed` while active. Implements `ConditionModifier` — speed is doubled on the first tick and restored exactly when the component expires. Decays over `Duration` turns.
+
+---
+
+### SlowedComponent
+
+```go
+type SlowedComponent struct { Duration int }
+```
+
+Halves the entity's `EnergyComponent.Speed` while active (minimum 1). Implements `ConditionModifier` — speed is halved on the first tick and restored exactly when the component expires. Decays over `Duration` turns.
+
+---
+
+### DamageConditionComponent
+
+```go
+type DamageConditionComponent struct {
+    Name       string
+    Duration   int
+    DamageDice string
+    DamageType string
+}
+```
+
+A general-purpose damage-over-time effect. Each turn `StatusConditionSystem` calls `Roll()` and routes the result through the standard damage path (random body part if `BodyComponent` is present, otherwise `HealthComponent`).
+
+`DamageDice` uses MLGE's dice expression format (e.g. `"1d6"`, `"2d4+1"`, `"3"`). `DamageType` is informational (e.g. `"poison"`, `"fire"`).
+
+`Name` is displayed in status UIs.
+
+**Method:**
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `Roll` | `() int` | Evaluates `DamageDice` and returns the result (minimum 1). Returns 1 on a parse error. |
+
+**Example:**
+
+```go
+// 1d4 venom damage for 6 turns
+entity.AddComponent(&rlcomponents.DamageConditionComponent{
+    Name:       "Venom",
+    Duration:   6,
+    DamageDice: "1d4",
+    DamageType: "poison",
+})
+```
+
+---
+
+### StatConditionComponent
+
+```go
+type StatMod struct {
+    Stat  string
+    Delta int
+}
+
+type StatConditionComponent struct {
+    Name     string
+    Duration int
+    Mods     []StatMod
+}
+```
+
+A general-purpose temporary stat modifier. Implements `ConditionModifier` — all `Mods` are applied on the first tick and reverted exactly when the component expires.
+
+Supported `Stat` values: `"ac"`, `"str"`, `"dex"`, `"con"`, `"int"`, `"wis"`, `"melee_attack_bonus"`, `"ranged_attack_bonus"`.
+
+`Name` is displayed in status UIs.
+
+**Examples:**
+
+```go
+// +2 AC for 5 turns ("Hardened")
+entity.AddComponent(&rlcomponents.StatConditionComponent{
+    Name:     "Hardened",
+    Duration: 5,
+    Mods:     []rlcomponents.StatMod{{Stat: "ac", Delta: 2}},
+})
+
+// +3 STR, −1 DEX for 8 turns ("Hormonal Surge")
+entity.AddComponent(&rlcomponents.StatConditionComponent{
+    Name:     "Hormonal Surge",
+    Duration: 8,
+    Mods: []rlcomponents.StatMod{
+        {Stat: "str", Delta: 3},
+        {Stat: "dex", Delta: -1},
+    },
+})
+```
 
 ---
 
