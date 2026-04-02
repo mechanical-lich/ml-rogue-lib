@@ -60,7 +60,17 @@ func (s *StatusConditionSystem) UpdateEntity(levelInterface interface{}, entity 
 			continue
 		}
 		dc := entity.GetComponent(se.componentType).(rlcomponents.DecayingComponent)
+
+		// Apply speed-modifying effects once.
+		if sm, ok := dc.(rlcomponents.SpeedModifier); ok {
+			sm.ApplyOnce(entity)
+		}
+
 		if dc.Decay() {
+			// Revert speed-modifying effects before removing.
+			if sm, ok := dc.(rlcomponents.SpeedModifier); ok {
+				sm.Revert(entity)
+			}
 			entity.RemoveComponent(se.componentType)
 		}
 
