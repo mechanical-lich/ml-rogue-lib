@@ -38,6 +38,8 @@ type TileDefinition struct {
 	SpriteHeight  int           `json:"spriteHeight"`  // 0 = use tile height
 	SpriteOffsetX int           `json:"spriteOffsetX"`
 	SpriteOffsetY int           `json:"spriteOffsetY"`
+	LightLevel    int           `json:"lightLevel"`  // 0 = no light; 1-100 = emitted intensity
+	LightRange    int           `json:"lightRange"`  // radius in tiles (0 = use default of 3)
 }
 
 var (

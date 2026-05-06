@@ -99,17 +99,29 @@ func (level *Level) InBounds(x, y, z int) bool {
 // and returns whether each shares the same Type and Variant (useful for autotiling).
 func (level *Level) AreNeighborsTheSame(t *Tile) (top, bottom, left, right bool) {
 	x, y, z := t.Coords()
+	def := TileDefinitions[t.Type]
+	isAutoTile := def.AutoTile != AutoTileNone
 
-	if n := level.GetTilePtr(x-1, y, z); n != nil && n.Type == t.Type && n.Variant == t.Variant {
+	sameType := func(n *Tile) bool {
+		if n == nil {
+			return false
+		}
+		if isAutoTile {
+			return n.Type == t.Type
+		}
+		return n.Type == t.Type && n.Variant == t.Variant
+	}
+
+	if sameType(level.GetTilePtr(x-1, y, z)) {
 		left = true
 	}
-	if n := level.GetTilePtr(x+1, y, z); n != nil && n.Type == t.Type && n.Variant == t.Variant {
+	if sameType(level.GetTilePtr(x+1, y, z)) {
 		right = true
 	}
-	if n := level.GetTilePtr(x, y-1, z); n != nil && n.Type == t.Type && n.Variant == t.Variant {
+	if sameType(level.GetTilePtr(x, y-1, z)) {
 		top = true
 	}
-	if n := level.GetTilePtr(x, y+1, z); n != nil && n.Type == t.Type && n.Variant == t.Variant {
+	if sameType(level.GetTilePtr(x, y+1, z)) {
 		bottom = true
 	}
 	return
@@ -122,12 +134,18 @@ func (level *Level) ResolveVariant(t *Tile) TileVariant {
 
 	switch def.AutoTile {
 	case AutoTileWall:
-		// 2-variant wall: bottom neighbor connected → Variants[0], else Variants[1]
+		// 2-variant wall: bottom neighbor connected → variant with .Variant==0, else .Variant==1
 		_, bottom, _, _ := level.AreNeighborsTheSame(t)
+		want := 1
 		if bottom {
-			return def.Variants[0]
+			want = 0
 		}
-		return def.Variants[1]
+		for i := range def.Variants {
+			if def.Variants[i].Variant == want {
+				return def.Variants[i]
+			}
+		}
+		return def.Variants[0]
 
 	case AutoTileBitmask:
 		// 4-bit cardinal bitmask: top=1, bottom=2, left=4, right=8 → 16 variants
@@ -145,8 +163,10 @@ func (level *Level) ResolveVariant(t *Tile) TileVariant {
 		if right {
 			idx |= 8
 		}
-		if idx < len(def.Variants) {
-			return def.Variants[idx]
+		for i := range def.Variants {
+			if def.Variants[i].Variant == idx {
+				return def.Variants[i]
+			}
 		}
 		return def.Variants[0]
 
