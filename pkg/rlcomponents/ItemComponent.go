@@ -5,12 +5,13 @@ import "github.com/mechanical-lich/mlge/ecs"
 type ItemSlot string
 
 const (
-	HandSlot  ItemSlot = "hand"
-	HeadSlot  ItemSlot = "head"
-	TorsoSlot ItemSlot = "torso"
-	LegsSlot  ItemSlot = "legs"
-	FeetSlot  ItemSlot = "feet"
-	BagSlot   ItemSlot = "bag"
+	HandSlot    ItemSlot = "hand"
+	OffHandSlot ItemSlot = "offhand"
+	HeadSlot    ItemSlot = "head"
+	TorsoSlot   ItemSlot = "torso"
+	LegsSlot    ItemSlot = "legs"
+	FeetSlot    ItemSlot = "feet"
+	BagSlot     ItemSlot = "bag"
 )
 
 // ItemComponent marks an entity as an item that can be picked up and equipped.

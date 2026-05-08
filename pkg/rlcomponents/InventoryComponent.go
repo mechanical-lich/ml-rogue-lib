@@ -80,6 +80,25 @@ func (ic *InventoryComponent) Equip(item *ecs.Entity) {
 	itemC := item.GetComponent(Item).(*ItemComponent)
 	switch itemC.Slot {
 	case HandSlot:
+		newIsTwoHanded := item.HasComponent(Weapon) && item.GetComponent(Weapon).(*WeaponComponent).TwoHanded
+		rightIsTwoHanded := ic.RightHand != nil && ic.RightHand.HasComponent(Weapon) && ic.RightHand.GetComponent(Weapon).(*WeaponComponent).TwoHanded
+
+		if newIsTwoHanded {
+			// Two-handed weapon: clear both slots first.
+			if ic.LeftHand != nil {
+				ic.AddItem(ic.LeftHand)
+				ic.LeftHand = nil
+			}
+			if ic.RightHand != nil {
+				ic.AddItem(ic.RightHand)
+				ic.RightHand = nil
+			}
+		} else if rightIsTwoHanded {
+			// Replacing a two-handed weapon with a one-handed one; free both slots.
+			ic.AddItem(ic.RightHand)
+			ic.RightHand = nil
+		}
+
 		if ic.RightHand == nil {
 			ic.RightHand = item
 		} else if ic.LeftHand == nil {
@@ -122,6 +141,9 @@ func (ic *InventoryComponent) Unequip(slot ItemSlot) *ecs.Entity {
 	case HandSlot:
 		item = ic.RightHand
 		ic.RightHand = nil
+	case OffHandSlot:
+		item = ic.LeftHand
+		ic.LeftHand = nil
 	case HeadSlot:
 		item = ic.Head
 		ic.Head = nil

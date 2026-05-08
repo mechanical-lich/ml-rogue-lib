@@ -47,8 +47,13 @@ func CanPassThroughDoor(entity *ecs.Entity, door *rlcomponents.DoorComponent) bo
 
 	if entity.HasComponent(rlcomponents.Description) {
 		dc := entity.GetComponent(rlcomponents.Description).(*rlcomponents.DescriptionComponent)
-		if dc.Faction == door.OwnedBy && door.OwnedBy != "" {
+		if door.OwnedBy != "" && dc.Faction == door.OwnedBy {
 			return true
+		}
+		for _, f := range door.AllowedFactions {
+			if dc.Faction == f {
+				return true
+			}
 		}
 	}
 	return false
