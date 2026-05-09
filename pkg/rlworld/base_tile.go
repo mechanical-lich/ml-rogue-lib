@@ -4,12 +4,13 @@ package rlworld
 // dimensions needed to derive coordinates — all plain integer fields, so the
 // GC never needs to scan a Tile for pointers.
 type Tile struct {
-	Type       int `json:"Type"`
-	Variant    int `json:"Variant"`
-	LightLevel int `json:"LightLevel"`
-	Idx        int `json:"-"` // flat index into Level.Data
-	width      int `json:"-"` // cached from the owning level
-	height     int `json:"-"` // cached from the owning level
+	Type       int   `json:"Type"`
+	Variant    int   `json:"Variant"`
+	LightLevel int   `json:"LightLevel"`
+	Radiation  uint8 `json:"Radiation,omitempty"` // 0 = none, 255 = max; tints rendering and damages exposed entities
+	Idx        int   `json:"-"`                   // flat index into Level.Data
+	width      int   `json:"-"`                   // cached from the owning level
+	height     int   `json:"-"`                   // cached from the owning level
 }
 
 // Coords derives X, Y, Z from the flat index and the cached level dimensions.
