@@ -202,6 +202,44 @@ func (level *Level) ResolveVariant(t *Tile) TileVariant {
 		}
 		return def.Variants[0]
 
+	case AutoTileBlob47:
+		top, bottom, left, right, ne, nw, se, sw := level.areNeighborsTheSame8(t)
+		mask := uint8(0)
+		if top {
+			mask |= BlobBitN
+		}
+		if bottom {
+			mask |= BlobBitS
+		}
+		if left {
+			mask |= BlobBitW
+		}
+		if right {
+			mask |= BlobBitE
+		}
+		if ne {
+			mask |= BlobBitNE
+		}
+		if nw {
+			mask |= BlobBitNW
+		}
+		if se {
+			mask |= BlobBitSE
+		}
+		if sw {
+			mask |= BlobBitSW
+		}
+		mask = PruneBlobMask(mask)
+		// Variants for AutoTileBlob47 use the pruned mask value (0..255) as
+		// their Variant field — no ordering convention. The artist labels
+		// each sheet cell with its mask and lays it out however they like.
+		for i := range def.Variants {
+			if def.Variants[i].Variant == int(mask) {
+				return def.Variants[i]
+			}
+		}
+		return def.Variants[0]
+
 	default:
 		if t.Middle.Variant >= 0 && t.Middle.Variant < len(def.Variants) {
 			return def.Variants[t.Middle.Variant]

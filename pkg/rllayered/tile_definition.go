@@ -17,6 +17,7 @@ const (
 	AutoTileNone    = 0 // Use tile.Variant as-is (default)
 	AutoTileWall    = 1 // 2-variant: connected bottom → Variants[0], edge → Variants[1]
 	AutoTileBitmask = 2 // 4-bit cardinal bitmask (top|bottom|left|right) → 16 variants
+	AutoTileBlob47  = 3 // 8-direction with corner pruning → 47 variants (GMS2-style)
 )
 
 // TileDefinition describes one category of tile. The Layer field decides which
