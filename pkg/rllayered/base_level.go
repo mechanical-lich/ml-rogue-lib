@@ -116,10 +116,19 @@ func (level *Level) areNeighborsTheSame8(t *Tile) (top, bottom, left, right, ne,
 		if n == nil || n.Middle.IsEmpty() {
 			return false
 		}
-		if isAutoTile {
-			return n.Middle.Type == t.Middle.Type
+		if n.Middle.Type == t.Middle.Type {
+			if isAutoTile {
+				return true
+			}
+			return n.Middle.Variant == t.Middle.Variant
 		}
-		return n.Middle.Type == t.Middle.Type && n.Middle.Variant == t.Middle.Variant
+		// Different concrete tile types — fuse if they share a MixID group.
+		if isAutoTile && def.MixID != 0 {
+			if nDef := TileDefinitions[n.Middle.Type]; nDef.MixID == def.MixID {
+				return true
+			}
+		}
+		return false
 	}
 
 	if sameType(level.GetTilePtr(x-1, y, z)) {

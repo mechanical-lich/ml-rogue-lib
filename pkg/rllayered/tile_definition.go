@@ -42,6 +42,11 @@ type TileDefinition struct {
 	SpriteOffsetY int           `json:"spriteOffsetY"`
 	LightLevel    int           `json:"lightLevel"`
 	LightRange    int           `json:"lightRange"`
+
+	// MixID groups visually-fusing tiles. When two adjacent tiles share the
+	// same non-zero MixID, autotile treats them as the same neighbor so the
+	// boundary between them doesn't produce inward-edge pieces. 0 = no group.
+	MixID int `json:"mixId,omitempty"`
 }
 
 // LayerOf returns the slot this tile definition wants to be painted into.
