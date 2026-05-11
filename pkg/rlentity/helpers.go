@@ -188,7 +188,10 @@ outer:
 			if tile == nil || tile.IsSolid() || tile.IsWater() {
 				return false
 			}
-			if tile.IsAir() {
+			// Air cells need a solid tile beneath them to stand on — unless the
+			// cell carries its own floor (layered tiles), in which case there's
+			// nothing to fall through.
+			if tile.IsAir() && !tile.HasFloor() {
 				below := level.GetTileAt(tx, ty, destZ-1)
 				if below == nil || !below.IsSolid() {
 					return false

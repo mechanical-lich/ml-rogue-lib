@@ -21,9 +21,10 @@ func (t *Tile) Coords() (x, y, z int) {
 	return
 }
 
-func (t *Tile) IsSolid() bool { return TileDefinitions[t.Type].Solid }
-func (t *Tile) IsWater() bool { return TileDefinitions[t.Type].Water }
-func (t *Tile) IsAir() bool   { return TileDefinitions[t.Type].Air }
+func (t *Tile) IsSolid() bool  { return TileDefinitions[t.Type].Solid }
+func (t *Tile) IsWater() bool  { return TileDefinitions[t.Type].Water }
+func (t *Tile) IsAir() bool    { return TileDefinitions[t.Type].Air }
+func (t *Tile) HasFloor() bool { return false } // single-slot tiles have no floor concept
 
 // PathID returns the flat index as a unique node ID for pathfinding.
 func (t *Tile) PathID() int { return t.Idx }
