@@ -54,8 +54,6 @@ func (d *TileDefinition) LayerOf() TileLayer {
 	switch d.Layer {
 	case "floor":
 		return LayerFloor
-	case "ceiling":
-		return LayerCeiling
 	default:
 		return LayerMiddle
 	}

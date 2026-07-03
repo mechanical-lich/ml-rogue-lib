@@ -2,9 +2,15 @@ package rllayered
 
 import "github.com/mechanical-lich/ml-rogue-lib/pkg/rlworld"
 
-// Tile is a per-cell record carrying three independently-painted layer slots
-// plus runtime fields (lighting, radiation). It is GC-friendly: every field is
-// a plain integer so the GC never needs to scan a Tile for pointers.
+// Tile is a per-cell record carrying two independently-painted layer slots
+// (Floor and Middle) plus runtime fields (lighting, radiation). It is
+// GC-friendly: every field is a plain integer so the GC never needs to scan a
+// Tile for pointers.
+//
+// There is no ceiling slot: the "ceiling" of a cell is simply the Floor of the
+// cell directly above it (Dwarf-Fortress style). This keeps a single source of
+// truth for each horizontal surface, so digging up/down clears one Floor slot
+// rather than a floor and a redundant ceiling.
 //
 // *Tile implements rlworld.TileInterface (Coords, PathID, IsSolid, IsWater,
 // IsAir), so existing rlworld-typed callers can consume layered tiles
@@ -12,7 +18,6 @@ import "github.com/mechanical-lich/ml-rogue-lib/pkg/rlworld"
 type Tile struct {
 	Floor      Slot  `json:"f"`
 	Middle     Slot  `json:"m"`
-	Ceiling    Slot  `json:"c"`
 	LightLevel int   `json:"l"`
 	Radiation  uint8 `json:"r,omitempty"`
 	Idx        int   `json:"-"`

@@ -1,12 +1,12 @@
 package rllayered
 
-// TileLayer names the three slots a layered cell can hold.
+// TileLayer names the slots a layered cell can hold. There is no ceiling layer:
+// a cell's ceiling is the Floor of the cell above it (see Tile).
 type TileLayer int
 
 const (
-	LayerMiddle  TileLayer = iota // structural / blocking — walls, ore, doors, air, water
-	LayerFloor                    // the ground surface
-	LayerCeiling                  // overhead — roofs, canopies (unused in POC)
+	LayerMiddle TileLayer = iota // structural / blocking — walls, ore, doors, air, water
+	LayerFloor                   // the ground surface
 )
 
 // Slot holds a single tile's identity within a layer. Type==0 is the sentinel

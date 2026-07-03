@@ -14,7 +14,7 @@ import (
 )
 
 // Level is a GC-optimized 3D tile container with spatial entity indexing.
-// Each cell carries Floor/Middle/Ceiling slots; see Tile.
+// Each cell carries Floor/Middle slots; see Tile.
 type Level struct {
 	Data           []Tile
 	Seen           []bool
@@ -258,7 +258,7 @@ func (level *Level) ResolveVariant(t *Tile) TileVariant {
 }
 
 // ResolveVariantForSlot returns the TileVariant for a specific slot of a tile.
-// Used by renderers that draw Floor and Ceiling layers (which don't autotile
+// Used by renderers that draw the Floor layer (which doesn't autotile
 // against Middle neighbors).
 func (level *Level) ResolveVariantForSlot(s Slot) TileVariant {
 	if s.IsEmpty() {
@@ -358,8 +358,6 @@ func (level *Level) PaintTile(x, y, z int, tileType string, variant int) rlworld
 	switch def.LayerOf() {
 	case LayerFloor:
 		t.Floor = slot
-	case LayerCeiling:
-		t.Ceiling = slot
 	default:
 		t.Middle = slot
 	}
@@ -367,9 +365,10 @@ func (level *Level) PaintTile(x, y, z int, tileType string, variant int) rlworld
 	return t
 }
 
-// SetFloor / SetMiddle / SetCeiling are direct slot setters for cases where
-// the caller has decided the layer explicitly (e.g. primers placing terrain
-// where a single tile name has both floor and middle semantics).
+// SetFloor / SetMiddle are direct slot setters for cases where the caller has
+// decided the layer explicitly (e.g. primers placing terrain where a single
+// tile name has both floor and middle semantics). To roof a cell, set the Floor
+// of the cell above it.
 func (level *Level) SetFloor(x, y, z int, tileType string, variant int) {
 	if !level.InBounds(x, y, z) {
 		return
@@ -391,18 +390,6 @@ func (level *Level) SetMiddle(x, y, z int, tileType string, variant int) {
 		return
 	}
 	level.Data[level.index(x, y, z)].Middle = Slot{Type: idx, Variant: variant}
-	level.InvalidateSunColumn(x, y)
-}
-
-func (level *Level) SetCeiling(x, y, z int, tileType string, variant int) {
-	if !level.InBounds(x, y, z) {
-		return
-	}
-	idx, ok := TileNameToIndex[tileType]
-	if !ok {
-		return
-	}
-	level.Data[level.index(x, y, z)].Ceiling = Slot{Type: idx, Variant: variant}
 	level.InvalidateSunColumn(x, y)
 }
 
